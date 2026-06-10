@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Film, Sparkles, Tv, ExternalLink } from 'lucide-react';
+import { Play, Pause, RotateCcw, Volume2, Maximize2, MonitorPlay, Film, Sparkles, Tv } from 'lucide-react';
 
 interface VideoPlayerProps {
   playAudioClick?: () => void;
@@ -8,9 +8,9 @@ interface VideoPlayerProps {
 
 interface DemoVideo {
   id: string;
-  youtubeId: string;
   title: string;
   duration: string;
+  durationSec: number;
   description: string;
   theme: 'blue' | 'amber';
   tagline: string;
@@ -19,18 +19,18 @@ interface DemoVideo {
 const VIDEOS_DATA: DemoVideo[] = [
   {
     id: 'general',
-    youtubeId: '7TgrwMqKBKw', // ID extraído do seu link do YouTube
     title: 'SILA Geral – Visão do Estado',
     duration: '03:00',
+    durationSec: 180,
     description: 'Apresentação macro da infraestrutura nacional de Estado Digital, abrangendo a filosofia de dados desfragmentados e interoperabilidade federativa sob o lema "O cidadão fornece os dados uma única vez".',
     theme: 'blue',
     tagline: 'A revolução digital na Governação Angolana.',
   },
   {
     id: 'education',
-    youtubeId: '7TgrwMqKBKw', // Substitua aqui pelo ID do segundo vídeo quando o tiver
     title: 'SILA Educação – O Piloto do Huambo',
     duration: '03:00',
+    durationSec: 180,
     description: 'Demostração prática do fluxo de matrículas integradas, pautas digitais, bilhetes biométricos interligados e as métricas do piloto operacional consolidado no planalto central angolano.',
     theme: 'amber',
     tagline: 'O portal letivo sem papéis centrado no estudante.',
@@ -39,11 +39,63 @@ const VIDEOS_DATA: DemoVideo[] = [
 
 export default function VideoPlayer({ playAudioClick }: VideoPlayerProps) {
   const [selectedVid, setSelectedVid] = useState<DemoVideo>(VIDEOS_DATA[0]);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [progress, setProgress] = useState(35); // simulated initial progress
+  const [soundBars, setSoundBars] = useState<number[]>(Array.from({ length: 28 }, () => Math.random() * 40));
+  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const audioWaveRef = useRef<NodeJS.Timeout | null>(null);
 
   // Selector handler
   const handleSelectVideo = (vid: DemoVideo) => {
     setSelectedVid(vid);
+    setIsPlaying(false);
+    setProgress(0);
     if (playAudioClick) playAudioClick();
+  };
+
+  // Toggle Play State
+  const togglePlay = () => {
+    setIsPlaying(!isPlaying);
+    if (playAudioClick) playAudioClick();
+  };
+
+  // Simulate progress when video is "playing"
+  useEffect(() => {
+    if (isPlaying) {
+      progressIntervalRef.current = setInterval(() => {
+        setProgress((prev) => {
+          if (prev >= 100) {
+            setIsPlaying(false);
+            return 0;
+          }
+          return prev + 0.5;
+        });
+      }, 500);
+
+      // Animate the sound wave visualizers
+      audioWaveRef.current = setInterval(() => {
+        setSoundBars(Array.from({ length: 28 }, () => Math.random() * 50 + 10));
+      }, 100);
+    } else {
+      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+      if (audioWaveRef.current) clearInterval(audioWaveRef.current);
+      // reset sound bars
+      setSoundBars(Array.from({ length: 28 }, () => Math.random() * 8 + 4));
+    }
+
+    return () => {
+      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+      if (audioWaveRef.current) clearInterval(audioWaveRef.current);
+    };
+  }, [isPlaying]);
+
+  // Format Elapsed Time string
+  const getElapsedFormatted = () => {
+    const totalSec = selectedVid.durationSec;
+    const elapsedSec = Math.floor((progress / 100) * totalSec);
+    const m = Math.floor(elapsedSec / 60);
+    const s = elapsedSec % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
   return (
@@ -115,7 +167,7 @@ export default function VideoPlayer({ playAudioClick }: VideoPlayerProps) {
         </div>
       </div>
 
-      {/* Cinematic YouTube Player View */}
+      {/* Cinematic mock player view */}
       <div className="lg:col-span-8 bg-[#05070A] rounded-2xl border border-white/10 p-1 bg-gradient-to-br from-[#05070A] via-[#05070A] to-blue-950/5 shadow-2xl relative flex flex-col justify-between">
         <div className="p-3 bg-[#05070A] rounded-t-xl border-b border-white/5 flex justify-between items-center text-[10px] sm:text-xs">
           <div className="flex items-center gap-2">
@@ -124,68 +176,143 @@ export default function VideoPlayer({ playAudioClick }: VideoPlayerProps) {
               {selectedVid.tagline}
             </span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 bg-white/[0.02] px-2 py-0.5 rounded border border-white/5 text-[9px] font-mono text-emerald-400">
-              <Sparkles className="w-3 h-3 text-emerald-400" />
-              TRANSMISSÃO OPERATIVA
-            </div>
-            <span className="font-mono text-slate-600 bg-white/[0.01] px-2 py-0.5 rounded border border-white/5">
-              4K UHD STREAM
-            </span>
-          </div>
+          <span className="font-mono text-slate-600 bg-white/[0.01] px-2 py-0.5 rounded border border-white/5">
+            4K UHD STREAM
+          </span>
         </div>
 
-        {/* Real Dynamic YouTube Iframe Container */}
-        <div className="relative aspect-video bg-black flex flex-col items-center justify-center overflow-hidden group">
-          {/* Neon radial backdrop shine behind the player */}
-          <div className={`absolute w-[400px] h-[400px] rounded-full blur-[110px] opacity-10 pointer-events-none transition-all duration-700 ${
+        {/* Visual Screen with splash / waveform */}
+        <div className="relative aspect-video bg-[#05070A] flex flex-col items-center justify-center p-6 select-none overflow-hidden group">
+          {/* Neon radial backdrop shine */}
+          <div className={`absolute w-[400px] h-[400px] rounded-full blur-[110px] opacity-15 pointer-events-none transition-all duration-700 ${
             selectedVid.theme === 'blue' ? 'bg-blue-500' : 'bg-amber-500'
           }`}></div>
 
+          {/* Floating particle sparkle */}
+          {isPlaying && (
+            <div className="absolute top-4 right-4 flex items-center gap-1.5 bg-white/[0.01] px-2.5 py-1 rounded border border-white/10 text-[9px] font-mono text-emerald-400">
+              <Sparkles className="w-3.5 h-3.5 animate-spin-slow" />
+              TRANSMISSÃO OPERATIVA
+            </div>
+          )}
+
+          {/* Main Visual: Splash Card or Simulated Waveform */}
           <AnimatePresence mode="wait">
-            <motion.div
-              key={selectedVid.id}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="w-full h-full z-10"
-            >
-              <iframe
-                className="w-full h-full border-0"
-                src={`https://www.youtube.com/embed/${selectedVid.youtubeId}?rel=0&modestbranding=1&showinfo=0&autoplay=0`}
-                title={selectedVid.title}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-              ></iframe>
-            </motion.div>
+            {!isPlaying ? (
+              <motion.div
+                key="splash"
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                className="text-center space-y-4 z-10"
+              >
+                {/* Big play medallion */}
+                <button
+                  onClick={togglePlay}
+                  className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 ring-4 pointer-events-auto ${
+                    selectedVid.theme === 'blue'
+                      ? 'bg-blue-600 hover:bg-blue-500 ring-blue-500/20'
+                      : 'bg-amber-500 hover:bg-amber-400 ring-amber-500/20'
+                  }`}
+                >
+                  <Play className="w-6 h-6 text-white translate-x-0.5" />
+                </button>
+                <div>
+                  <h4 className="text-xs font-mono uppercase tracking-widest text-slate-500">
+                    Clique para iniciar simulação
+                  </h4>
+                  <p className="text-sm font-sans font-medium text-slate-200 mt-1 max-w-md">
+                    {selectedVid.title}
+                  </p>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="active-playback"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="w-full h-full flex flex-col items-center justify-between z-10 p-4"
+              >
+                {/* Simulated Waveform Header */}
+                <div className="text-center mt-4">
+                  <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest block">
+                    REPRODUZINDO AUDITORIA EXECUTIVA
+                  </span>
+                  <p className="text-xs text-slate-300 font-sans mt-1">
+                    {selectedVid.description}
+                  </p>
+                </div>
+
+                {/* Animated Audio Frequencies Waveform */}
+                <div className="flex items-end justify-center gap-1 h-24 w-full px-12 select-none">
+                  {soundBars.map((barHeight, idx) => (
+                    <motion.div
+                      key={idx}
+                      style={{ height: `${barHeight}%` }}
+                      className={`w-1.5 sm:w-2 min-h-[4px] rounded-full transition-all duration-100 ${
+                        selectedVid.theme === 'blue' ? 'bg-blue-500/70' : 'bg-amber-500/70'
+                      }`}
+                    />
+                  ))}
+                </div>
+
+                {/* Micro Log */}
+                <div className="text-[9px] font-mono text-slate-500 bg-[#05070A] px-3 py-1.5 rounded-lg border border-white/5 text-center">
+                  CODEC: AAC-LC 192KBPS STEREO • VIDEO ENCODER: HEVC-10bit
+                </div>
+              </motion.div>
+            )}
           </AnimatePresence>
         </div>
 
-        {/* Player Description Meta Infobar */}
-        <div className="p-4 bg-[#05070A] rounded-b-xl border-t border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="space-y-0.5 max-w-xl">
-            <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest block">
-              SINOPSE EXECUTIVA ATIVA
-            </span>
-            <p className="text-xs text-slate-400 font-sans leading-relaxed">
-              {selectedVid.description}
-            </p>
+        {/* Player Controls Bar */}
+        <div className="p-4 bg-[#05070A] rounded-b-xl border-t border-white/5 space-y-3">
+          {/* Time & Progress track */}
+          <div className="space-y-1">
+            <div className="relative h-1 bg-white/5 rounded-full cursor-pointer">
+              <div
+                className={`absolute left-0 top-0 h-full rounded-full transition-all duration-300 ${
+                  selectedVid.theme === 'blue' ? 'bg-blue-500' : 'bg-amber-500'
+                }`}
+                style={{ width: `${progress}%` }}
+              ></div>
+            </div>
+            <div className="flex justify-between items-center text-[10px] font-mono text-slate-500">
+              <span>{getElapsedFormatted()}</span>
+              <span>{selectedVid.duration}</span>
+            </div>
           </div>
 
-          <div className="flex items-center sm:justify-end gap-3 shrink-0">
-            <a 
-              href={`https://youtu.be/${selectedVid.youtubeId}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 text-[10px] font-mono text-slate-500 hover:text-slate-300 border border-white/5 hover:border-white/10 bg-white/[0.01] px-2.5 py-1.5 rounded-lg transition-all"
-            >
-              <span>Abrir original</span>
-              <ExternalLink className="w-3 h-3" />
-            </a>
-            <span className="text-[10px] font-mono text-slate-500">
-              Codec: <span className="text-emerald-400 font-bold">HEVC-10bit (H.265)</span>
-            </span>
+          {/* Action buttons */}
+          <div className="flex items-center justify-between pointer-events-auto">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={togglePlay}
+                className="text-slate-400 hover:text-slate-200 transition-colors"
+                title={isPlaying ? 'Pausar' : 'Reproduzir'}
+              >
+                {isPlaying ? <Pause className="w-4 h-4 text-amber-500" /> : <Play className="w-4 h-4" />}
+              </button>
+              <button
+                onClick={() => setProgress(0)}
+                className="text-slate-400 hover:text-slate-200 transition-colors"
+                title="Reiniciar"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+              </button>
+              <div className="hidden sm:flex items-center gap-1.5 text-slate-500 hover:text-slate-400 transition-colors">
+                <Volume2 className="w-4 h-4" />
+                <span className="text-[9px] font-mono">EXECUÇÃO INTERNA MOCK</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] font-mono text-slate-500">
+                Qualidade: <span className="text-emerald-400 font-bold">AUTO (4K)</span>
+              </span>
+              <Maximize2 className="w-4 h-4 text-slate-400 hover:text-slate-200 cursor-pointer" />
+            </div>
           </div>
         </div>
       </div>

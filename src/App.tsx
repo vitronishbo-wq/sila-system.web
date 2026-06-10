@@ -42,6 +42,7 @@ import GovernmentEfficiencyCalculator from './components/GovernmentEfficiencyCal
 import DigitalMaturityChart from './components/DigitalMaturityChart';
 import ProblemaContent from './components/ProblemaContent';
 import HuamboDematerializationLineChart from './components/HuamboDematerializationLineChart';
+import PilotProtocolVisualizer from './components/PilotProtocolVisualizer';
 
 import { PROBLEM_METRICS, FUC_MILESTONES, EDUCATION_CAPABILITIES } from './data/silaData';
 import { FucMilestone, EducationCapability } from './types';
@@ -980,6 +981,7 @@ export default function App() {
                 <PilotProposals playAudioClick={playChime} />
                 <DigitalMaturityChart playAudioClick={playChime} />
                 <HuamboDematerializationLineChart playAudioClick={playChime} />
+                <PilotProtocolVisualizer />
                 <SovereignKeyTakeaway sectionId="piloto" className="mt-12" />
                 <SovereignQuickJump currentSectionId="piloto" sections={SECTIONS} onNavigate={handleNavigate} playAudioClick={playChime} />
               </ParallaxContent>
