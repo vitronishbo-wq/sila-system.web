@@ -230,14 +230,12 @@ export default function FucThreeDViewer({ playAudioClick }: FucThreeDViewerProps
       speed: number;
       color: number[];
     }
-    const particlesRef = useRef<Particle[]>(
-      nodes.filter(n => n.x !== 0).map((n, i) => ({
-        nodeIdx: i + 1, // Skip core
-        progress: Math.random(),
-        speed: 0.005 + Math.random() * 0.008,
-        color: n.color
-      }))
-    );
+    const activeParticles: Particle[] = nodes.filter(n => n.x !== 0).map((n, i) => ({
+      nodeIdx: i + 1, // Skip core
+      progress: Math.random(),
+      speed: 0.005 + Math.random() * 0.008,
+      color: n.color
+    }));
 
     // Render loop
     let animationId: number;
@@ -319,7 +317,6 @@ export default function FucThreeDViewer({ playAudioClick }: FucThreeDViewerProps
       // 2. Update and Draw flowing data particles (represented as temporary buffers)
       gl.uniform1i(isLineLoc, 0);
       gl.uniform1f(pointSizeLoc, 4.0);
-      const activeParticles = particlesRef.current;
       const particlePositions: number[] = [];
       const particleColors: number[] = [];
 
