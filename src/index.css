@@ -1,0 +1,371 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+/* Custom fade-in and utility keyframes for map nodes/active state animations */
+@keyframes dash {
+  to {
+    stroke-dashoffset: -100;
+  }
+}
+
+.animate-dash {
+  stroke-dasharray: 4, 12;
+  animation: dash 8s linear infinite;
+}
+
+.animate-spin-slow {
+  animation: spin 20s linear infinite;
+}
+
+/* ==================== SYSTEM INTEGRATED THEMES (SILA EXECUTIVE) ==================== */
+
+/* Dark Theme Default Variable Set */
+:root {
+  --app-bg: #05070A;
+  --app-card-bg: rgba(255, 255, 255, 0.01);
+  --app-card-border: rgba(255, 255, 255, 0.05);
+  --app-accent-border: rgba(255, 255, 255, 0.1);
+  --app-text: #f1f5f9;
+  --app-text-muted: #94a3b8;
+  --contrast-level: 1;
+}
+
+/* High Contrast Global Filters */
+.high-contrast {
+  filter: contrast(1.18) saturate(1.1) brightness(1.05) !important;
+}
+
+.high-contrast * {
+  font-weight: 500 !important; /* Increase weight slightly for maximum readability */
+  text-shadow: 0 0 1px rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Light Theme Executive Definition */
+.theme-light {
+  background-color: #f5f7fa !important;
+}
+
+body.theme-light {
+  background-color: #f5f7fa !important;
+  color: #0f172a !important;
+}
+
+/* Direct Element & Class Overrides for Light Mode */
+.theme-light .bg-\[\#05070A\] {
+  background-color: #f5f7fa !important;
+}
+
+.theme-light .text-slate-100,
+.theme-light .text-white {
+  color: #0f172a !important;
+}
+
+.theme-light .text-slate-200, 
+.theme-light .text-slate-300 {
+  color: #1e293b !important;
+}
+
+.theme-light .text-slate-400 {
+  color: #334155 !important;
+}
+
+.theme-light .text-slate-500 {
+  color: #475569 !important;
+}
+
+.theme-light .border-white\/5 {
+  border-color: rgba(15, 23, 42, 0.08) !important;
+}
+
+.theme-light .border-white\/10 {
+  border-color: rgba(15, 23, 42, 0.15) !important;
+}
+
+/* Navigation, Buttons, Cards - Light Styling Custom Adaptations */
+.theme-light .bg-white\/\[0\.01\] {
+  background-color: rgba(15, 23, 42, 0.02) !important;
+}
+
+.theme-light .bg-white\/\[0\.02\] {
+  background-color: rgba(15, 23, 42, 0.04) !important;
+}
+
+.theme-light .bg-white\/5 {
+  background-color: rgba(15, 23, 42, 0.05) !important;
+}
+
+.theme-light .bg-white\/10 {
+  background-color: rgba(15, 23, 42, 0.08) !important;
+}
+
+.theme-light .bg-\[\#05070A\]\/30 {
+  background-color: rgba(15, 23, 42, 0.03) !important;
+}
+
+.theme-light .bg-\[\#05070A\]\/40 {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+.theme-light .bg-\[\#05070A\]\/80 {
+  background-color: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+.theme-light .bg-\[\#05070A\]\/95 {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+.theme-light .bg-slate-900 {
+  background-color: #e2e8f0 !important;
+}
+
+.theme-light .text-amber-500\/40 {
+  color: rgba(217, 119, 6, 0.7) !important;
+}
+
+/* High Contrast Overrides (combines light or dark theme with extreme legibility standards) */
+.high-contrast.theme-light {
+  background-color: #ffffff !important;
+}
+
+.high-contrast.theme-light .text-slate-100,
+.high-contrast.theme-light .text-white,
+.high-contrast.theme-light .text-slate-200,
+.high-contrast.theme-light .text-slate-300,
+.high-contrast.theme-light .text-slate-400 {
+  color: #000000 !important;
+  font-weight: 600 !important;
+}
+
+.high-contrast.theme-light .border-white\/5,
+.high-contrast.theme-light .border-white\/10,
+.high-contrast.theme-light .border-dashed {
+  border-color: #000000 !important;
+  border-width: 1.5px !important;
+}
+
+.high-contrast.theme-dark {
+  background-color: #000000 !important;
+}
+
+.high-contrast.theme-dark .text-slate-100,
+.high-contrast.theme-dark .text-white {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+
+.high-contrast.theme-dark .text-slate-300,
+.high-contrast.theme-dark .text-slate-400 {
+  color: #f1f5f9 !important;
+  font-weight: 500 !important;
+}
+
+.high-contrast.theme-dark .border-white/5,
+.high-contrast.theme-dark .border-white/10 {
+  border-color: #ffffff !important;
+  border-width: 1.5px !important;
+}
+
+/* ==================== ACCESSIBILITY DALTONISM MODES ==================== */
+.protanopia {
+  filter: url('#protanopia-filter') !important;
+}
+
+.deuteranopia {
+  filter: url('#deuteranopia-filter') !important;
+}
+
+.tritanopia {
+  filter: url('#tritanopia-filter') !important;
+}
+
+/* Combined modes for accessibility correctness rendering */
+.high-contrast.protanopia {
+  filter: contrast(1.18) saturate(1.1) brightness(1.05) url('#protanopia-filter') !important;
+}
+
+.high-contrast.deuteranopia {
+  filter: contrast(1.18) saturate(1.1) brightness(1.05) url('#deuteranopia-filter') !important;
+}
+
+.high-contrast.tritanopia {
+  filter: contrast(1.18) saturate(1.1) brightness(1.05) url('#tritanopia-filter') !important;
+}
+
+
+/* ==================== HIGH FIDELITY EXECUTIVE PRINT MODE (A4 PORTRAIT) ==================== */
+@media print {
+  /* Dynamic size configurations for standard international A4 sheets */
+  @page {
+    size: A4 portrait;
+    margin: 18mm 15mm 18mm 15mm;
+  }
+
+  /* Reset layout, width, background colors for clean, light physical paper prints */
+  html, body {
+    background-color: #ffffff !important;
+    background-image: none !important;
+    color: #0f172a !important;
+    font-size: 11pt !important;
+    line-height: 1.5 !important;
+    width: 210mm !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Suppress all interactive screens and non-report features from layout */
+  header,
+  footer,
+  nav,
+  button,
+  .no-print,
+  .quick-jump,
+  input,
+  [role="button"],
+  video,
+  .video-controls,
+  .audio-toggle,
+  .search-palette,
+  .notes-panel,
+  .floating-widget,
+  .fixed,
+  .absolute-spotlight,
+  [title*="Pesquisar"],
+  [title*="Apresentador"],
+  [title*="Acessibilidade"] {
+    display: none !important;
+  }
+
+  /* Ensure correct slide separation with page breaks */
+  section, 
+  main section, 
+  .motion-section {
+    display: block !important;
+    page-break-before: always !important;
+    break-before: page !important;
+    padding-top: 25px !important;
+    padding-bottom: 25px !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    min-height: auto !important;
+    height: auto !important;
+    transform: none !important;
+    opacity: 1 !important;
+    filter: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Flatten presentation titles, tables and paragraphs for deep legibility */
+  p, span, h1, h2, h3, h4, h5, h6, li, td, th {
+    color: #0f172a !important;
+    text-shadow: none !important;
+  }
+
+  /* Force standard black/slate tones */
+  .text-white, 
+  .text-slate-100, 
+  .text-slate-200, 
+  .text-slate-300, 
+  .text-slate-400 {
+    color: #1a202c !important;
+  }
+
+  /* Soft readable mute tags */
+  .text-slate-500, 
+  .text-slate-600 {
+    color: #4a5568 !important;
+  }
+
+  /* Custom rich print-safe tones for high-level callout texts */
+  .text-blue-400, 
+  .text-blue-500, 
+  .text-blue-600 {
+    color: #1d4ed8 !important; /* Deep rich blue */
+    font-weight: 600 !important;
+  }
+
+  .text-amber-400, 
+  .text-amber-500, 
+  .text-amber-600 {
+    color: #b45309 !important; /* Elegant gold accent */
+    font-weight: 600 !important;
+  }
+
+  .text-emerald-400, 
+  .text-emerald-500, 
+  .text-emerald-600 {
+    color: #047857 !important; /* Deep forest green */
+  }
+
+  /* Prevent background spotlight blurs using high storage */
+  .blur-\[130px\], 
+  .blur-\[120px\], 
+  .blur-xl, 
+  .bg-gradient-to-t, 
+  .bg-gradient-to-b {
+    background: none !important;
+    background-image: none !important;
+    filter: none !important;
+  }
+
+  /* Style descriptive boxes and cards cleanly as soft framed fields */
+  .bg-white\/5, 
+  .bg-white\/\[0\.01\], 
+  .bg-white\/\[0\.02\], 
+  .bg-slate-900, 
+  .bg-\[\#05070A\]\/95 {
+    background-color: #f7fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    color: #1a202c !important;
+    border-radius: 6px !important;
+    box-shadow: none !important;
+    opacity: 1 !important;
+  }
+
+  /* Ensure Grid columns display vertically or side-by-side cleanly without overflowing printed boundaries */
+  .grid {
+    display: grid !important;
+    opacity: 1 !important;
+    gap: 12px !important;
+  }
+
+  /* Refactor media placeholders */
+  .aspect-square {
+    max-height: 240px !important;
+    margin: 0 auto !important;
+  }
+
+  /* Avoid title breaking / orphan words */
+  h1, h2, h3, h4 {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  /* Ensure linear visual timelines have clean border marks */
+  .timeline-container, .timeline-trail {
+    border-color: #cbd5e1 !important;
+  }
+
+  /* Expand hidden answers/FAQs inside printed outputs */
+  .faq-answer, .strategic-faq-answer {
+    display: block !important;
+    opacity: 1 !important;
+    max-height: none !important;
+  }
+}
+
+
+

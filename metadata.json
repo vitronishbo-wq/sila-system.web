@@ -1,0 +1,6 @@
+{
+  "name": "SILA - Plataforma de Estado Digital",
+  "description": "Experiência executiva interativa de Estado Digital para o SILA – Sistema Integrado Local de Angola.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,600 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
+  AreaChart, Area, Legend, LineChart, Line
+} from 'recharts';
+import { 
+  TrendingUp, Users, School, LayoutGrid, RefreshCw, Layers, ShieldCheck, 
+  Database, Zap, Flame, Globe, AlertCircle, Play, Sliders
+} from 'lucide-react';
+
+interface SovereignExecutiveDashboardProps {
+  playAudioClick?: (type?: 'hover' | 'activation' | 'click') => void;
+  isOffline?: boolean;
+}
+
+// Fixed mock historical data for Recharts
+const MONTHLY_HISTORICAL_DATA = [
+  { month: 'Jan', cidadaos: 320000, matriculas: 110000, economiaKz: 42 },
+  { month: 'Fev', cidadaos: 480000, matriculas: 180000, economiaKz: 68 },
+  { month: 'Mar', cidadaos: 690000, matriculas: 240000, economiaKz: 95 },
+  { month: 'Abr', cidadaos: 890000, matriculas: 310000, economiaKz: 121 },
+  { month: 'Mai', cidadaos: 1120000, matriculas: 420000, economiaKz: 164 },
+  { month: 'Jun (Atual)', cidadaos: 1248390, matriculas: 483921, economiaKz: 198 }
+];
+
+// Province level breakdown
+const PROVINCE_DISTRIBUTION_DATA = [
+  { name: 'Luanda', escolas: 620, cadastrados: 490000, matriculas: 192000, meta: 550000 },
+  { name: 'Huambo', escolas: 310, cadastrados: 210000, matriculas: 810000, meta: 250000 },
+  { name: 'Benguela', escolas: 290, cadastrados: 195000, matriculas: 75000, meta: 220000 },
+  { name: 'Cabinda', escolas: 140, cadastrados: 98000, matriculas: 38000, meta: 110000 },
+  { name: 'Huíla', escolas: 282, cadastrados: 165000, matriculas: 68000, meta: 190000 },
+  { name: 'Uíge', escolas: 200, cadastrados: 90390, matriculas: 30921, meta: 120000 }
+];
+
+// Efficiency comparison data (Manual vs SILA)
+const EFFICIENCY_METRICS = [
+  { item: 'Validação Certidão', manual: 600, sila: 3 }, // in minutes (10h vs 3s)
+  { item: 'Emissão de Matrícula', manual: 1440, sila: 8 }, // in minutes (24h vs 8s)
+  { item: 'Auditabilidade / Fraude', manual: 10080, sila: 1 }, // in minutes (7 days vs 1s)
+  { item: 'Consolidação Nacional', manual: 43200, sila: 2 } // in minutes (30 days vs 2s)
+];
+
+export default function SovereignExecutiveDashboard({
+  playAudioClick,
+  isOffline = false
+}: SovereignExecutiveDashboardProps) {
+  
+  // Dynamic Simulation stats (SILA Live State Engine):
+  const [liveCitizens, setLiveCitizens] = useState(1248390);
+  const [liveMatriculas, setLiveMatriculas] = useState(483921);
+  const [syncQueue, setSyncQueue] = useState<number>(0);
+  const [lastSyncTime, setLastSyncTime] = useState<string>('Agora mesmo');
+  const [selectedProvinceTab, setSelectedProvinceTab] = useState<'all' | 'high' | 'communal'>('all');
+  const [simSpeed, setSimSpeed] = useState<number>(3000); // ms per simulated citizen integration
+  const [isSimulatingLoad, setIsSimulatingLoad] = useState(true);
+  const [comparisonMetric, setComparisonMetric] = useState<'Kz' | 'Time'>('Time');
+
+  // Trigger sound effect auxiliary
+  const triggerSound = (type: 'hover' | 'activation' | 'click') => {
+    if (playAudioClick) playAudioClick(type);
+  };
+
+  // Real-time ticking engine: simulates live citizens and enrollments being processed.
+  useEffect(() => {
+    if (!isSimulatingLoad) return;
+
+    const interval = setInterval(() => {
+      const citizenIncrement = Math.floor(Math.random() * 3) + 1;
+      const matriculasIncrement = Math.random() > 0.4 ? Math.floor(Math.random() * 2) + 1 : 0;
+
+      if (isOffline) {
+        // If offline simulated, increments go into local queue cache
+        setSyncQueue(prev => prev + citizenIncrement);
+      } else {
+        // If online, they immediately persist to the simulated central ledger
+        setLiveCitizens(prev => prev + citizenIncrement);
+        setLiveMatriculas(prev => prev + matriculasIncrement);
+        if (syncQueue > 0) {
+          // Flush queue to central ledger upon being online
+          setLiveCitizens(prev => prev + syncQueue);
+          setSyncQueue(0);
+          setLastSyncTime(new Date().toLocaleTimeString('pt-AO'));
+        }
+      }
+    }, simSpeed);
+
+    return () => clearInterval(interval);
+  }, [isOffline, simSpeed, isSimulatingLoad, syncQueue]);
+
+  // Flush local cache manually (SILA sync trigger simulation)
+  const handleForceSync = () => {
+    triggerSound('activation');
+    if (syncQueue > 0) {
+      setLiveCitizens(prev => prev + syncQueue);
+      setSyncQueue(0);
+      setLastSyncTime(new Date().toLocaleTimeString('pt-AO'));
+    }
+  };
+
+  // Generate dynamic chart data based on active filters
+  const filteredProvinceData = useMemo(() => {
+    if (selectedProvinceTab === 'all') return PROVINCE_DISTRIBUTION_DATA;
+    if (selectedProvinceTab === 'high') {
+      return PROVINCE_DISTRIBUTION_DATA.filter(p => p.cadastrados > 150000);
+    }
+    // 'communal' / smaller regions focus
+    return PROVINCE_DISTRIBUTION_DATA.filter(p => p.cadastrados < 150000);
+  }, [selectedProvinceTab]);
+
+  return (
+    <div 
+      className="p-6 sm:p-8 bg-[#05070A]/85 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl relative overflow-hidden"
+      role="region"
+      aria-label="Painel de Controle de Estatísticas Executivas e Métricas do SILA"
+    >
+      {/* Decorative Top glow beam */}
+      <div className="absolute top-0 left-1/4 right-1/4 h-[1px] bg-gradient-to-r from-transparent via-blue-500/40 to-transparent"></div>
+
+      {/* Header section with status widgets */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between pb-6 border-b border-white/10 gap-4 mb-8">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-6 bg-gradient-to-b from-blue-500 to-emerald-500 rounded-full" />
+            <span className="text-[10px] font-mono text-blue-400 font-bold uppercase tracking-widest leading-none">
+              Módulo Governativo SILA
+            </span>
+          </div>
+          <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-white mt-1">
+            Painel Executivo de Estatísticas em Tempo Real
+          </h3>
+          <p className="text-xs text-slate-400 mt-1 max-w-2xl">
+            Acompanhe o ritmo de saneamento cadastral e emissão de Fichas Únicas do Cidadão (FUC) em regime federativo nacional de Angola.
+          </p>
+        </div>
+
+        {/* Real-Time Live Status Ledger State bar */}
+        <div className="flex flex-wrap items-center gap-3 bg-white/[0.02] border border-white/10 rounded-2xl px-4 py-2.5 text-[11px] font-mono select-none">
+          <div className="flex items-center gap-2 pr-3 border-r border-white/10">
+            <div className="relative flex h-2.5 w-2.5">
+              <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isOffline ? 'bg-amber-400' : 'bg-emerald-400'}`}></span>
+              <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${isOffline ? 'bg-amber-500' : 'bg-emerald-500'}`}></span>
+            </div>
+            <span className="text-slate-200">SILA Ledger:</span>
+            <span className={isOffline ? 'text-amber-500 font-bold' : 'text-emerald-400 font-bold'}>
+              {isOffline ? 'OFFLINE CACHE' : 'MAT CENTRAL CLOUD'}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-slate-500">Última Sincronização:</span>
+            <span className="text-blue-400 font-bold">{lastSyncTime}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Grid of KPI Widgets */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+        
+        {/* KPI 1: Citizens Integrated */}
+        <div className="p-5 rounded-2xl bg-white/[0.01] border border-white/5 relative group hover:border-[#FFB800]/20 transition-all duration-300">
+          <div className="absolute top-0 right-0 w-16 h-16 bg-[#FFB800]/2 pointer-events-none rounded-br-2xl blur-md"></div>
+          <div className="flex items-center justify-between">
+            <div className="text-slate-500 text-[10px] uppercase font-mono tracking-widest">
+              Cidadãos Integrados
+            </div>
+            <div className="p-1.5 rounded-lg bg-amber-500/10 text-[#FFB800]">
+              <Users className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-4 flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-bold font-mono tracking-tight text-white">
+              {liveCitizens.toLocaleString('pt-AO')}
+            </span>
+            <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-0.5">
+              <TrendingUp className="w-2.5 h-2.5" /> Live
+            </span>
+          </div>
+          <p className="text-[10px] text-slate-500 mt-1">
+            Fichas Únicas ativas no banco nacional.
+          </p>
+        </div>
+
+        {/* KPI 2: Active Schools */}
+        <div className="p-5 rounded-2xl bg-white/[0.01] border border-white/5 relative group hover:border-blue-500/20 transition-all duration-300">
+          <div className="absolute top-0 right-0 w-16 h-16 bg-blue-500/2 pointer-events-none rounded-br-2xl blur-md"></div>
+          <div className="flex items-center justify-between">
+            <div className="text-slate-500 text-[10px] uppercase font-mono tracking-widest">
+              Escolas Ativas (SILA OS)
+            </div>
+            <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400">
+              <School className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-4 flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-bold font-mono tracking-tight text-white">
+              1.842
+            </span>
+            <span className="text-[10px] text-slate-400">100% Piloto</span>
+          </div>
+          <p className="text-[10px] text-slate-500 mt-1">
+            Unidades integradas à malha civil do MAT.
+          </p>
+        </div>
+
+        {/* KPI 3: Total Enrollments */}
+        <div className="p-5 rounded-2xl bg-white/[0.01] border border-white/5 relative group hover:border-cyan-400/20 transition-all duration-300">
+          <div className="absolute top-0 right-0 w-16 h-16 bg-cyan-400/2 pointer-events-none rounded-br-2xl blur-md"></div>
+          <div className="flex items-center justify-between">
+            <div className="text-slate-500 text-[10px] uppercase font-mono tracking-widest">
+              Processos de Matrícula
+            </div>
+            <div className="p-1.5 rounded-lg bg-cyan-400/10 text-cyan-400">
+              <ShieldCheck className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-4 flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-bold font-mono tracking-tight text-white">
+              {liveMatriculas.toLocaleString('pt-AO')}
+            </span>
+            <span className="text-[10px] text-[#FFB800]">+232/dia</span>
+          </div>
+          <p className="text-[10px] text-slate-500 mt-1">
+            Inscritos validados sem atestados de papel.
+          </p>
+        </div>
+
+        {/* KPI 4: Offline Synchronization Queue status */}
+        <div className="p-5 rounded-2xl bg-white/[0.01] border border-white/5 relative group hover:border-emerald-400/20 transition-all duration-300">
+          <div className="absolute top-0 right-0 w-16 h-16 bg-emerald-400/2 pointer-events-none rounded-br-2xl blur-md"></div>
+          <div className="flex items-center justify-between">
+            <div className="text-slate-500 text-[10px] uppercase font-mono tracking-widest">
+              Fila de Sincronização Local
+            </div>
+            <div className={`p-1.5 rounded-lg ${syncQueue > 0 ? 'bg-amber-500/10 text-amber-500' : 'bg-emerald-500/10 text-emerald-400'}`}>
+              <Database className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-4 flex items-center justify-between">
+            <span className={`text-2xl sm:text-3xl font-bold font-mono tracking-tight ${syncQueue > 0 ? 'text-amber-400 animate-pulse' : 'text-emerald-400'}`}>
+              {syncQueue} <span className="text-xs text-slate-400 normal-case font-sans">docs</span>
+            </span>
+            {syncQueue > 0 && (
+              <button
+                onClick={handleForceSync}
+                onMouseEnter={() => triggerSound('hover')}
+                className="px-2 py-1 rounded bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/20 text-[9px] font-mono tracking-wider transition-all"
+                title="Forçar sincronização manual da fila"
+              >
+                SINCRONIZAR
+              </button>
+            )}
+          </div>
+          <p className="text-[10px] text-slate-500 mt-1">
+            {isOffline 
+              ? 'Local cache crescendo offline na comuna.' 
+              : 'Nenhum registro pendente em cache local.'}
+          </p>
+        </div>
+
+      </div>
+
+      {/* Main Charts & interactive widgets Area */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        
+        {/* Left main: Historical Chart */}
+        <div className="lg:col-span-8 bg-white/[0.005] border border-white/5 rounded-2xl p-5 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/5">
+            <div>
+              <h4 className="text-sm font-semibold text-slate-100 flex items-center gap-1.5">
+                <TrendingUp className="w-4 h-4 text-blue-400" />
+                Histórico Geral de Integração & Crescimento FUC
+              </h4>
+              <p className="text-[10px] text-slate-500 font-mono mt-0.5">
+                Evolução mensal cumulativa de cidadãos e matrículas validadas sob SILA.
+              </p>
+            </div>
+
+            {/* Custom chart legend indicators */}
+            <div className="flex items-center gap-4 text-[10px] font-mono text-slate-400">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded bg-blue-500"></span>
+                Cidadãos (Fichas)
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded bg-emerald-500"></span>
+                Matrículas Escolares
+              </span>
+            </div>
+          </div>
+
+          <div className="h-64 sm:h-72 w-full no-print">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart
+                data={MONTHLY_HISTORICAL_DATA}
+                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+              >
+                <defs>
+                  <linearGradient id="colorCidadaos" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2}/>
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                  </linearGradient>
+                  <linearGradient id="colorMatriculas" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.2}/>
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
+                <XAxis 
+                  dataKey="month" 
+                  stroke="rgba(255,255,255,0.3)" 
+                  tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 10, fontFamily: 'monospace' }}
+                  tickLine={false}
+                />
+                <YAxis 
+                  stroke="rgba(255,255,255,0.3)" 
+                  tickFormatter={(val) => `${val/1000}k`}
+                  tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 10, fontFamily: 'monospace' }}
+                  tickLine={false}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: '#090d14', 
+                    borderRadius: '12px', 
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    fontFamily: 'monospace',
+                    fontSize: '11px',
+                    color: '#fff'
+                  }} 
+                  labelClassName="text-slate-400 font-bold"
+                />
+                <Area 
+                  name="Cidadãos"
+                  type="monotone" 
+                  dataKey="cidadaos" 
+                  stroke="#3b82f6" 
+                  strokeWidth={2}
+                  fillOpacity={1} 
+                  fill="url(#colorCidadaos)" 
+                />
+                <Area 
+                  name="Matrículas"
+                  type="monotone" 
+                  dataKey="matriculas" 
+                  stroke="#10b981" 
+                  strokeWidth={2}
+                  fillOpacity={1} 
+                  fill="url(#colorMatriculas)" 
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Right side panel: High-impact economic / execution efficiency comparison */}
+        <div className="lg:col-span-4 bg-white/[0.005] border border-white/5 rounded-2xl p-5 space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-white/5">
+            <div>
+              <h4 className="text-sm font-semibold text-slate-100 flex items-center gap-1.5">
+                <Zap className="w-4 h-4 text-emerald-400 animate-pulse" />
+                Eficiência Coletiva
+              </h4>
+              <p className="text-[10px] text-slate-500 font-mono mt-0.5">
+                Impacto imediato operacional.
+              </p>
+            </div>
+
+            {/* Toggle state comparing time reduction or economic benefit */}
+            <div className="flex bg-white/5 border border-white/10 rounded-lg p-0.5 text-[9px] font-mono no-print">
+              <button
+                onClick={() => { setComparisonMetric('Time'); triggerSound('hover'); }}
+                className={`px-2 py-1 rounded-md font-bold transition-all ${comparisonMetric === 'Time' ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white' : 'text-slate-400 hover:text-slate-200'}`}
+              >
+                TEMPO
+              </button>
+              <button
+                onClick={() => { setComparisonMetric('Kz'); triggerSound('hover'); }}
+                className={`px-2 py-1 rounded-md font-bold transition-all ${comparisonMetric === 'Kz' ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white' : 'text-slate-400 hover:text-slate-200'}`}
+              >
+                Kwanza
+              </button>
+            </div>
+          </div>
+
+          {comparisonMetric === 'Time' ? (
+            <div className="space-y-4">
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                Minutos despendidos em canais burocráticos tradicionais comparados à validação instantânea via FUC SILA.
+              </p>
+              
+              <div className="space-y-3 pt-2 font-mono text-[10px]">
+                {EFFICIENCY_METRICS.map((metric, idx) => {
+                  const percentOfManual = Math.max(1, Math.round((metric.sila / metric.manual) * 100));
+                  return (
+                    <div key={idx} className="space-y-1">
+                      <div className="flex justify-between text-slate-300">
+                        <span className="font-semibold block truncate max-w-[140px] sm:max-w-none">{metric.item}</span>
+                        <div className="flex gap-2">
+                          <span className="text-[#FFB800]">{metric.manual >= 60 ? `${metric.manual/60}h` : `${metric.manual}m`} tradicional</span>
+                          <span className="text-emerald-400 font-bold">&gt; {metric.sila}s SILA</span>
+                        </div>
+                      </div>
+                      <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden flex relative">
+                        {/* Red manual path filler */}
+                        <div className="bg-rose-500/20 h-full rounded-l" style={{ width: '85%' }} />
+                        {/* Emerald fast SILA path indicator */}
+                        <div className="bg-emerald-400 h-full rounded-r transition-all" style={{ width: '15%' }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="p-3 rounded-xl bg-blue-500/5 border border-blue-500/10 text-center">
+                <span className="text-[11px] text-blue-400 font-mono font-bold leading-tight">
+                  TEMPO MÉDIO DE ESPERA GLOBAL: -99.98%
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                Economia acumulada estimada em milhões de Kwanzas (Kz) devido à abolição de papel selado, emolumentos e logística física de arquivos municipais.
+              </p>
+
+              {/* Economic chart Recharts */}
+              <div className="h-44 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={MONTHLY_HISTORICAL_DATA} margin={{ top: 5, right: 5, left: -25, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.02)" vertical={false} />
+                    <XAxis dataKey="month" stroke="rgba(255,255,255,0.15)" tick={{ fontSize: 9, fontFamily: 'monospace' }} />
+                    <YAxis stroke="rgba(255,255,255,0.15)" tick={{ fontSize: 9, fontFamily: 'monospace' }} />
+                    <Tooltip contentStyle={{ backgroundColor: '#090d14', border: '1px solid rgba(255,255,255,0.1)', fontSize: '10px', fontFamily: 'monospace' }} />
+                    <Line type="monotone" dataKey="economiaKz" name="Milhões de Kz" stroke="#FFB800" strokeWidth={2} dot={{ fill: '#FFB800', r: 3 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div className="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/10 text-center font-mono">
+                <span className="text-[10px] text-emerald-400 font-bold block">
+                  ECONOMIA ATUAL ACUMULADA:
+                </span>
+                <span className="text-lg font-bold text-slate-100 block mt-0.5">
+                  198.000.000 Kz
+                </span>
+              </div>
+            </div>
+          )}
+
+        </div>
+
+      </div>
+
+      {/* Territorial Breakdown Map bar chart and Provincial Controls */}
+      <div className="mt-8 pt-6 border-t border-white/5 space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h4 className="text-sm font-semibold text-slate-100 flex items-center gap-1.5">
+              <Globe className="w-4 h-4 text-cyan-400" />
+              Saneamento Territorial por Província
+            </h4>
+            <p className="text-[10px] text-slate-500 font-mono mt-0.5">
+              Percentagem de alcance de dados de registo civil contra metas estimadas por circunscrição.
+            </p>
+          </div>
+
+          {/* Interactive filter buttons for Recharts bar chart */}
+          <div className="flex flex-wrap items-center gap-2 text-[10px] font-mono no-print">
+            <span className="text-slate-500 uppercase text-[9px] mr-1 block">Filtrar:</span>
+            {[
+              { id: 'all', label: 'TODAS PROVÍNCIAS' },
+              { id: 'high', label: 'ALTA DENSIDADE (&gt;150k)' },
+              { id: 'communal', label: 'COMUNAL E INTERIOR (&lt;150k)' }
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => { setSelectedProvinceTab(tab.id as any); triggerSound('click'); }}
+                className={`px-3 py-1.5 rounded-lg border transition-all ${
+                  selectedProvinceTab === tab.id
+                    ? 'bg-blue-500/10 text-blue-400 border-blue-500/30 font-bold'
+                    : 'bg-white/[0.01] hover:bg-white/[0.03] text-slate-400 border-white/5'
+                }`}
+                dangerouslySetInnerHTML={{ __html: tab.label }}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Territory analysis chart */}
+        <div className="h-64 sm:h-72 w-full no-print">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={filteredProvinceData}
+              margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
+              <XAxis 
+                dataKey="name" 
+                stroke="rgba(255,255,255,0.3)" 
+                tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 10, fontFamily: 'monospace' }}
+                tickLine={false}
+              />
+              <YAxis 
+                stroke="rgba(255,255,255,0.3)" 
+                tickFormatter={(val) => val >= 1000 ? `${val/1000}k` : val}
+                tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 10, fontFamily: 'monospace' }}
+                tickLine={false}
+              />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: '#090d14', 
+                  borderRadius: '12px', 
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  fontFamily: 'monospace',
+                  fontSize: '11px',
+                  color: '#fff'
+                }}
+              />
+              <Bar 
+                name="Meta Estabilização"
+                dataKey="meta" 
+                fill="rgba(255,255,255,0.05)" 
+                radius={[4, 4, 0, 0]} 
+                maxBarSize={40}
+              />
+              <Bar 
+                name="Auditados (FUC)"
+                dataKey="cadastrados" 
+                fill="#3b82f6" 
+                radius={[4, 4, 0, 0]} 
+                maxBarSize={40}
+              />
+              <Bar 
+                name="Escolas Integradas"
+                dataKey="escolas" 
+                fill="#FFB800" 
+                radius={[4, 4, 0, 0]} 
+                maxBarSize={40}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Interactive simulation controllers at the bottom to play with the live figures */}
+      <div className="mt-8 p-4 bg-white/[0.01] border border-white/5 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 no-print sm:font-mono text-xs">
+        <div className="flex items-center gap-3.5 flex-wrap justify-center sm:justify-start">
+          <span className="flex items-center gap-1.5 text-slate-400">
+            <Sliders className="w-4 h-4 text-blue-500 animate-spin-slow" />
+            SIMULADOR DE CARGA DO LEDGER:
+          </span>
+          <button
+            onClick={() => { setIsSimulatingLoad(!isSimulatingLoad); triggerSound('activation'); }}
+            className={`px-3 py-1.5 rounded-lg border font-bold transition-all flex items-center gap-1.5 ${
+              isSimulatingLoad 
+                ? 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border-emerald-500/25' 
+                : 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border-rose-500/25'
+            }`}
+          >
+            <Play className={`w-3 h-3 ${isSimulatingLoad ? 'fill-emerald-400' : ''}`} />
+            {isSimulatingLoad ? 'TICKATIVADO' : 'PAUSADO'}
+          </button>
+
+          {/* Speed governor */}
+          {isSimulatingLoad && (
+            <div className="flex items-center gap-2">
+              <span className="text-slate-500 text-[10px]">VELOCIDADE DE INJEÇÃO:</span>
+              <div className="flex bg-neutral-900 border border-white/10 rounded-lg p-0.5">
+                {[
+                  { speed: 5000, label: 'Lenta' },
+                  { speed: 3000, label: 'Média' },
+                  { speed: 800, label: 'Nuvem Alta' }
+                ].map((item) => (
+                  <button
+                    key={item.speed}
+                    onClick={() => { setSimSpeed(item.speed); triggerSound('click'); }}
+                    className={`px-2 py-0.5 rounded text-[9px] font-bold ${
+                      simSpeed === item.speed 
+                        ? 'bg-blue-500 text-white' 
+                        : 'text-slate-400 hover:text-slate-300'
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="text-[10px] text-slate-500 flex items-center gap-1.5 select-none">
+          <AlertCircle className="w-3.5 h-3.5 text-slate-400" />
+          <span>Controles de simulação restritos para decisores.</span>
+        </div>
+      </div>
+
+    </div>
+  );
+}
