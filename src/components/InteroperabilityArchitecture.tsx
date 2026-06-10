@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -8,13 +8,16 @@ import { useGSAP } from '@gsap/react';
 if (typeof window !== 'undefined') {
   gsap.registerPlugin(ScrollTrigger);
 }
+
 import SovereignTooltip from './SovereignTooltip';
 import FucThreeDViewer from './FucThreeDViewer';
 import { 
-  Network, Database, ArrowLeftRight, HelpCircle, ShieldAlert,
-  School, HeartPulse, Scale, ShieldCheck, Briefcase, Landmark, RefreshCw,
-  Camera, Sparkles, RotateCw
+  Database, School, HeartPulse, Scale, ShieldCheck, 
+  Briefcase, Landmark, RefreshCw, Camera, Sparkles, RotateCw
 } from 'lucide-react';
+
+// Importação do tipo nativo para evitar quebras de build no TypeScript
+import type { LucideIcon } from 'lucide-react';
 
 interface InteroperabilityArchitectureProps {
   playAudioClick?: (type?: 'hover' | 'activation' | 'click') => void;
@@ -25,8 +28,8 @@ interface SatelliteNode {
   id: string;
   name: string;
   system: string;
-  angle: number; // Degrees for radial layout
-  icon: React.ComponentType<{ className?: string }>;
+  angle: number; // Graus para o layout radial
+  icon: LucideIcon;
   color: string;
   desc: string;
 }
@@ -41,7 +44,7 @@ const SATELLITE_NODES: SatelliteNode[] = [
 ];
 
 export default function InteroperabilityArchitecture({ playAudioClick, onOpenAr }: InteroperabilityArchitectureProps) {
-  const [activeViewMode, setActiveViewMode] = useState<'2d' | '3d'>('3d'); // 3D enabled by default to immediately showcase the new WebGL visual
+  const [activeViewMode, setActiveViewMode] = useState<'2d' | '3d'>('3d');
   const [isSyncing, setIsSyncing] = useState(false);
   const [selectedNode, setSelectedNode] = useState<SatelliteNode | null>(SATELLITE_NODES[0]);
   const [syncPhase, setSyncPhase] = useState<'idle' | 'flowing' | 'complete'>('idle');
@@ -49,10 +52,8 @@ export default function InteroperabilityArchitecture({ playAudioClick, onOpenAr 
   const rootRef = useRef<HTMLDivElement>(null);
 
   useGSAP(() => {
-    // Refresh ScrollTrigger calculations on mount so coordinates match
     ScrollTrigger.refresh();
 
-    // Direct scroll-linked scrub transitions for 3D WebGL/2D diagram
     gsap.fromTo(".gsap-arch-viewer",
       { opacity: 0.4, y: 40, scale: 0.98, filter: "blur(5px)" },
       {
@@ -69,7 +70,6 @@ export default function InteroperabilityArchitecture({ playAudioClick, onOpenAr 
       }
     );
 
-    // Direct scroll-linked scrub transitions for interactive settings column
     gsap.fromTo(".gsap-arch-ctrl",
       { opacity: 0.4, y: 60, scale: 0.98 },
       {
@@ -89,25 +89,24 @@ export default function InteroperabilityArchitecture({ playAudioClick, onOpenAr 
   const startSimulation = () => {
     setIsSyncing(true);
     setSyncPhase('flowing');
-    if (playAudioClick) playAudioClick();
+    if (playAudioClick) playAudioClick('activation');
 
-    // Flow phase animation timeline
     setTimeout(() => {
       setSyncPhase('complete');
       setIsSyncing(false);
-      if (playAudioClick) playAudioClick();
+      if (playAudioClick) playAudioClick('click');
     }, 4000);
   };
 
   const resetSimulation = () => {
     setSyncPhase('idle');
     setIsSyncing(false);
-    if (playAudioClick) playAudioClick();
+    if (playAudioClick) playAudioClick('click');
   };
 
   const handleNodeClick = (node: SatelliteNode) => {
     setSelectedNode(node);
-    if (playAudioClick) playAudioClick();
+    if (playAudioClick) playAudioClick('hover');
   };
 
   return (
@@ -117,7 +116,7 @@ export default function InteroperabilityArchitecture({ playAudioClick, onOpenAr 
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#05070A_1.5px,transparent_1.5px),linear-gradient(to_bottom,#05070A_1.5px,transparent_1.5px)] bg-[size:36px_36px] opacity-15 pointer-events-none"></div>
 
       {/* Visual Radial Schema or 3D WebGL Area */}
-      <div className="gsap-arch-viewer lg:col-span-7 flex flex-col justify-center relative min-h-[360px] sm:min-h-[460px] select-none rounded-2xl overflow-hidden self-stretch">
+      <div className="gsap-arch-viewer lg:col-span-7 flex flex-col justify-center relative min-h-[380px] sm:min-h-[480px] select-none rounded-2xl overflow-hidden self-stretch">
         <AnimatePresence mode="wait">
           {activeViewMode === '3d' ? (
             <motion.div 
@@ -126,7 +125,7 @@ export default function InteroperabilityArchitecture({ playAudioClick, onOpenAr 
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.96 }}
               transition={{ duration: 0.4 }}
-              className="w-full h-full min-h-[360px] sm:min-h-[440px] flex flex-col"
+              className="w-full h-full min-h-[380px] sm:min-h-[440px] flex flex-col"
             >
               <FucThreeDViewer playAudioClick={playAudioClick} />
             </motion.div>
@@ -137,12 +136,12 @@ export default function InteroperabilityArchitecture({ playAudioClick, onOpenAr 
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.96 }}
               transition={{ duration: 0.4 }}
-              className="relative w-full h-full min-h-[360px] sm:min-h-[440px] flex flex-col items-center justify-center"
+              className="relative w-full h-full min-h-[380px] sm:min-h-[440px] flex items-center justify-center"
             >
-              {/* Core FUC node in the center */}
+              {/* Central Core FUC node */}
               <div 
                 onClick={startSimulation}
-                className={`absolute w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-[#05070A] border-2 flex flex-col items-center justify-center p-3 text-center transition-all duration-500 cursor-pointer z-20 ${
+                className={`w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-[#05070A] border-2 flex flex-col items-center justify-center p-3 text-center transition-all duration-500 cursor-pointer z-20 ${
                   syncPhase === 'complete'
                     ? 'border-amber-500 shadow-xl shadow-amber-500/10'
                     : syncPhase === 'flowing'
@@ -150,103 +149,83 @@ export default function InteroperabilityArchitecture({ playAudioClick, onOpenAr 
                     : 'border-white/10'
                 }`}
               >
-                {/* Internal core visuals */}
                 <div className="absolute inset-0.5 rounded-full border border-dashed border-white/5 animate-spin-slow"></div>
                 
-                <Database className={`w-6 h-6 mb-1 transition-all duration-300 ${
+                <Database className={`w-5 h-5 sm:w-6 sm:h-6 mb-1 transition-all duration-300 ${
                   syncPhase === 'complete' ? 'text-amber-500 scale-110' : syncPhase === 'flowing' ? 'text-blue-500 animate-spin' : 'text-slate-400'
                 }`} />
                 
-                <span className="text-[10px] uppercase font-mono tracking-widest text-slate-400 block font-bold leading-tight">
+                <span className="text-[9px] sm:text-[10px] uppercase font-mono tracking-widest text-slate-400 block font-bold leading-tight">
                   <SovereignTooltip term="CORE FUC" explanation="O núcleo centralizado da Ficha Única que unifica dados de identificação civil nacional.">CORE FUC</SovereignTooltip>
                 </span>
-                <span className="text-[9px] font-mono text-slate-500 block leading-none mt-1">
+                <span className="text-[8px] sm:text-[9px] font-mono text-slate-500 block leading-none mt-1">
                   Ficha Única
                 </span>
               </div>
 
-              {/* Outer orbital boundary circle */}
-              <div className="absolute w-[240px] h-[240px] sm:w-[320px] sm:h-[320px] rounded-full border border-dashed border-white/5 pointer-events-none z-0"></div>
+              {/* Orbital circle reference */}
+              <div className="absolute w-[60%] aspect-square rounded-full border border-dashed border-white/5 pointer-events-none z-0"></div>
 
-              {/* Dynamic active SVG flow particles overlaying diagram */}
+              {/* Dynamic responsive SVG flow route lines */}
               <svg className="absolute inset-0 w-full h-full pointer-events-none z-10">
                 {SATELLITE_NODES.map((node) => {
-                  // Radial trigonometry layout calculation
                   const radians = (node.angle * Math.PI) / 180;
-                  // Map percentages relative to center (50%)
-                  const radiusPercent = window.innerWidth < 640 ? 25 : 32; // Responsive radius scaling
-                  const startX = 50 + radiusPercent * Math.cos(radians);
-                  const startY = 50 - radiusPercent * Math.sin(radians);
-
+                  
+                  // Usamos um raio percentual constante (30% do tamanho do container) para total responsividade
+                  const radiusFactor = 30;
+                  const startX = 50 + radiusFactor * Math.cos(radians);
+                  const startY = 50 - radiusFactor * Math.sin(radians);
                   const isFlowing = syncPhase === 'flowing';
 
                   return (
                     <g key={`flow-${node.id}`}>
-                      {/* Visual connection route */}
                       <line
                         x1={`${startX}%`}
                         y1={`${startY}%`}
                         x2="50%"
                         y2="50%"
                         className={`transition-all duration-300 ${
-                          isFlowing ? 'stroke-blue-500/40 font-bold' : 'stroke-white/[0.03]'
+                          isFlowing ? 'stroke-blue-500/40' : 'stroke-white/[0.03]'
                         }`}
                         strokeWidth={isFlowing ? "1.5" : "0.6"}
                       />
 
-                      {/* Continuous faint background heartbeat flows (representing standard telemetry at idle) */}
                       {!isFlowing && (
                         [...Array(3)].map((_, i) => (
                           <motion.circle
                             key={`idle-trail-${node.id}-${i}`}
-                            r={1.8 - i * 0.4}
+                            r={1.5}
                             fill={node.color}
-                            opacity={0.14 - i * 0.04}
+                            opacity={0.12 - i * 0.04}
                             initial={{ cx: `${startX}%`, cy: `${startY}%` }}
                             animate={{ cx: '50%', cy: '50%' }}
                             transition={{
-                              duration: 3.8,
+                              duration: 3.5,
                               repeat: Infinity,
                               ease: "linear",
-                              delay: i * 0.16,
+                              delay: i * 0.2,
                             }}
                           />
                         ))
                       )}
 
-                      {/* Cryptographic stem cell stream trails with zero-latency high frequency flow */}
                       {isFlowing && (
-                        [...Array(6)].map((_, i) => (
+                        [...Array(5)].map((_, i) => (
                           <g key={`active-flow-${node.id}-${i}`}>
                             <motion.circle
-                              r={3.2 - i * 0.5}
+                              r={2.5 - i * 0.4}
                               fill={node.color}
                               className="filter drop-shadow-[0_0_3px_rgba(59,130,246,0.35)]"
-                              opacity={1.0 - i * 0.16}
+                              opacity={1.0 - i * 0.2}
                               initial={{ cx: `${startX}%`, cy: `${startY}%` }}
                               animate={{ cx: '50%', cy: '50%' }}
                               transition={{
                                 duration: 1.1,
                                 repeat: Infinity,
                                 ease: "easeIn",
-                                delay: i * 0.06, // Millimetric trailing delay offsets
+                                delay: i * 0.06,
                               }}
                             />
-                            {/* Organic stem cell vanguard bloom bubble */}
-                            {i === 0 && (
-                              <motion.circle
-                                r={8}
-                                fill={node.color}
-                                opacity={0.12}
-                                initial={{ cx: `${startX}%`, cy: `${startY}%`, scale: 0.5 }}
-                                animate={{ cx: '50%', cy: '50%', scale: 1.3 }}
-                                transition={{
-                                  duration: 1.1,
-                                  repeat: Infinity,
-                                  ease: "easeOut",
-                                }}
-                              />
-                            )}
                           </g>
                         ))
                       )}
@@ -255,35 +234,37 @@ export default function InteroperabilityArchitecture({ playAudioClick, onOpenAr 
                 })}
               </svg>
 
-              {/* Radial Satellites layout */}
+              {/* Radial Satellites Absolute placement wrapper */}
               {SATELLITE_NODES.map((node) => {
                 const NodeIcon = node.icon;
                 const isSelected = selectedNode?.id === node.id;
                 const radians = (node.angle * Math.PI) / 180;
-                const radiusStyle = window.innerWidth < 640 ? 115 : 155; // matches radians radius coordinates exactly
-                const xPos = radiusStyle * Math.cos(radians);
-                const yPos = -radiusStyle * Math.sin(radians);
+                
+                // Conversão da trigonometria para posições de percentagem inline (Responsivo)
+                const radiusFactor = 30;
+                const leftPercent = 50 + radiusFactor * Math.cos(radians);
+                const topPercent = 50 - radiusFactor * Math.sin(radians);
 
                 return (
                   <div
                     key={node.id}
                     onClick={() => handleNodeClick(node)}
                     style={{
-                      transform: `translate(${xPos}px, ${yPos}px)`,
+                      left: `${leftPercent}%`,
+                      top: `${topPercent}%`,
                     }}
-                    className={`absolute w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-[#05070A] border flex flex-col items-center justify-center cursor-pointer transition-all duration-350 z-20 hover:scale-105 ${
+                    className={`absolute w-11 h-11 sm:w-14 sm:h-14 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#05070A] border flex flex-col items-center justify-center cursor-pointer transition-all duration-300 z-20 hover:scale-105 ${
                       isSelected
                         ? 'border-blue-500 shadow-md shadow-blue-950/40 text-blue-400'
                         : 'border-white/10 text-slate-500 hover:border-white/20'
                     }`}
                     title={node.system}
                   >
-                    {/* Colored active border accent */}
                     <div 
                       className="absolute inset-[1.5px] rounded-full opacity-0 hover:opacity-10 transition-opacity"
                       style={{ backgroundColor: node.color }}
                     ></div>
-                    <NodeIcon className="w-5 h-5 sm:w-5.5 sm:h-5.5" />
+                    <NodeIcon className="w-4 h-4 sm:w-5.5 sm:h-5.5" />
                   </div>
                 );
               })}
@@ -295,7 +276,6 @@ export default function InteroperabilityArchitecture({ playAudioClick, onOpenAr 
       {/* Side ControlHUD Details panel */}
       <div className="gsap-arch-ctrl lg:col-span-5 space-y-6 relative z-10 bg-white/[0.01] p-6 rounded-2xl border border-white/5">
         
-        {/* Title */}
         <div className="border-b border-white/5 pb-4">
           <span className="text-[9px] uppercase font-mono tracking-widest text-emerald-500 mb-1 block font-bold">
             PLATAFORMA INTEGRAL DE <SovereignTooltip term="INTEROPERABILIDADE" explanation="A capacidade segura de conectar e sincronizar instantaneamente os silos de dados de diferentes ministérios de Angola num único barramento soberano.">INTEROPERABILIDADE</SovereignTooltip>
@@ -308,7 +288,7 @@ export default function InteroperabilityArchitecture({ playAudioClick, onOpenAr 
           </p>
         </div>
 
-        {/* Dynamic 3D WebGL / 2D Diagram Space switcher */}
+        {/* View Mode Switcher */}
         <div className="flex bg-[#05080c]/60 border border-white/15 p-1 rounded-xl items-center justify-between no-print gap-1.5 shadow-md">
           <span className="text-[10px] font-mono text-slate-400 pl-2 font-semibold">ESPAÇO DE VISTA:</span>
           <div className="flex gap-1">
@@ -336,7 +316,7 @@ export default function InteroperabilityArchitecture({ playAudioClick, onOpenAr 
           </div>
         </div>
 
-        {/* Trigger Simulation Console / Active block */}
+        {/* Console Action Blocks */}
         <div className="space-y-4">
           {syncPhase === 'idle' && (
             <div className="p-4 bg-[#05070A] rounded-xl border border-white/5 space-y-3">
@@ -395,7 +375,7 @@ export default function InteroperabilityArchitecture({ playAudioClick, onOpenAr 
           )}
         </div>
 
-        {/* Selected Hub Details Indicator */}
+        {/* Selected Node Output */}
         {selectedNode && (
           <div className="bg-[#05070A] p-4 rounded-xl border border-white/5 text-xs space-y-2">
             <div className="flex items-center gap-2 border-b border-white/5 pb-2">
@@ -413,7 +393,7 @@ export default function InteroperabilityArchitecture({ playAudioClick, onOpenAr 
           </div>
         )}
 
-        {/* AR Space Demonstrator Launcher Button */}
+        {/* AR Button */}
         {onOpenAr && (
           <button
             onClick={() => {
@@ -431,7 +411,6 @@ export default function InteroperabilityArchitecture({ playAudioClick, onOpenAr 
         )}
 
       </div>
-      
     </div>
   );
 }
