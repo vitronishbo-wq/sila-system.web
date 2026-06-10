@@ -1,13 +1,8 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
-
-// Register ScrollTrigger for client-side environments
-if (typeof window !== 'undefined') {
-  gsap.registerPlugin(ScrollTrigger);
-}
 
 import SovereignTooltip from './SovereignTooltip';
 import FucThreeDViewer from './FucThreeDViewer';
@@ -16,7 +11,6 @@ import {
   Briefcase, Landmark, RefreshCw, Camera, Sparkles, RotateCw
 } from 'lucide-react';
 
-// Importação do tipo nativo para evitar quebras de build no TypeScript
 import type { LucideIcon } from 'lucide-react';
 
 interface InteroperabilityArchitectureProps {
@@ -28,7 +22,7 @@ interface SatelliteNode {
   id: string;
   name: string;
   system: string;
-  angle: number; // Graus para o layout radial
+  angle: number;
   icon: LucideIcon;
   color: string;
   desc: string;
@@ -43,48 +37,83 @@ const SATELLITE_NODES: SatelliteNode[] = [
   { id: 'adm', name: 'Admin Local', system: 'SILA Governação do Território', angle: 300, icon: Landmark, color: '#BFDBFE', desc: 'Levantamento de infraestruturas locais, licenças, saneamento e registo habitacional.' },
 ];
 
+// Client-only wrapper component
+const ClientOnly = ({ children }: { children: React.ReactNode }) => {
+  const [hasMounted, setHasMounted] = useState(false);
+  
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
+  
+  if (!hasMounted) return null;
+  return <>{children}</>;
+};
+
 export default function InteroperabilityArchitecture({ playAudioClick, onOpenAr }: InteroperabilityArchitectureProps) {
-  const [activeViewMode, setActiveViewMode] = useState<'2d' | '3d'>('3d');
+  const [activeViewMode, setActiveViewMode] = useState<'2d' | '3d'>('2d'); // Mudei para '2d' como padrão para evitar erro inicial do 3D
   const [isSyncing, setIsSyncing] = useState(false);
   const [selectedNode, setSelectedNode] = useState<SatelliteNode | null>(SATELLITE_NODES[0]);
   const [syncPhase, setSyncPhase] = useState<'idle' | 'flowing' | 'complete'>('idle');
+  const [isClient, setIsClient] = useState(false);
 
   const rootRef = useRef<HTMLDivElement>(null);
 
+  // Garantir que só executamos no cliente
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   useGSAP(() => {
-    ScrollTrigger.refresh();
+    // Só executa se estivermos no cliente e o ScrollTrigger estiver disponível
+    if (typeof window === 'undefined' || !ScrollTrigger) return;
+    
+    // Garantir que o plugin está registado
+    try {
+      gsap.registerPlugin(ScrollTrigger);
+      ScrollTrigger.refresh();
+    } catch (error) {
+      console.warn('GSAP ScrollTrigger registration failed:', error);
+      return;
+    }
 
-    gsap.fromTo(".gsap-arch-viewer",
-      { opacity: 0.4, y: 40, scale: 0.98, filter: "blur(5px)" },
-      {
-        opacity: 1,
-        y: 0,
-        scale: 1,
-        filter: "blur(0px)",
-        scrollTrigger: {
-          trigger: rootRef.current,
-          start: "top 95%",
-          end: "bottom 60%",
-          scrub: 1,
+    const viewer = document.querySelector(".gsap-arch-viewer");
+    const ctrl = document.querySelector(".gsap-arch-ctrl");
+    
+    if (viewer) {
+      gsap.fromTo(".gsap-arch-viewer",
+        { opacity: 0.4, y: 40, scale: 0.98, filter: "blur(5px)" },
+        {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          filter: "blur(0px)",
+          scrollTrigger: {
+            trigger: rootRef.current,
+            start: "top 95%",
+            end: "bottom 60%",
+            scrub: 1,
+          }
         }
-      }
-    );
+      );
+    }
 
-    gsap.fromTo(".gsap-arch-ctrl",
-      { opacity: 0.4, y: 60, scale: 0.98 },
-      {
-        opacity: 1,
-        y: 0,
-        scale: 1,
-        scrollTrigger: {
-          trigger: rootRef.current,
-          start: "top 90%",
-          end: "bottom 55%",
-          scrub: 1.2,
+    if (ctrl) {
+      gsap.fromTo(".gsap-arch-ctrl",
+        { opacity: 0.4, y: 60, scale: 0.98 },
+        {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          scrollTrigger: {
+            trigger: rootRef.current,
+            start: "top 90%",
+            end: "bottom 55%",
+            scrub: 1.2,
+          }
         }
-      }
-    );
-  }, { scope: rootRef });
+      );
+    }
+  }, { scope: rootRef, dependencies: [isClient] });
 
   const startSimulation = () => {
     setIsSyncing(true);
@@ -118,7 +147,7 @@ export default function InteroperabilityArchitecture({ playAudioClick, onOpenAr 
       {/* Visual Radial Schema or 3D WebGL Area */}
       <div className="gsap-arch-viewer lg:col-span-7 flex flex-col justify-center relative min-h-[380px] sm:min-h-[480px] select-none rounded-2xl overflow-hidden self-stretch">
         <AnimatePresence mode="wait">
-          {activeViewMode === '3d' ? (
+          {activeViewMode === '3d' && isClient ? (
             <motion.div 
               key="3d-webgl"
               initial={{ opacity: 0, scale: 0.96 }}
@@ -127,7 +156,9 @@ export default function InteroperabilityArchitecture({ playAudioClick, onOpenAr 
               transition={{ duration: 0.4 }}
               className="w-full h-full min-h-[380px] sm:min-h-[440px] flex flex-col"
             >
-              <FucThreeDViewer playAudioClick={playAudioClick} />
+              <ClientOnly>
+                <FucThreeDViewer playAudioClick={playAudioClick} />
+              </ClientOnly>
             </motion.div>
           ) : (
             <motion.div
@@ -170,8 +201,6 @@ export default function InteroperabilityArchitecture({ playAudioClick, onOpenAr 
               <svg className="absolute inset-0 w-full h-full pointer-events-none z-10">
                 {SATELLITE_NODES.map((node) => {
                   const radians = (node.angle * Math.PI) / 180;
-                  
-                  // Usamos um raio percentual constante (30% do tamanho do container) para total responsividade
                   const radiusFactor = 30;
                   const startX = 50 + radiusFactor * Math.cos(radians);
                   const startY = 50 - radiusFactor * Math.sin(radians);
@@ -239,8 +268,6 @@ export default function InteroperabilityArchitecture({ playAudioClick, onOpenAr 
                 const NodeIcon = node.icon;
                 const isSelected = selectedNode?.id === node.id;
                 const radians = (node.angle * Math.PI) / 180;
-                
-                // Conversão da trigonometria para posições de percentagem inline (Responsivo)
                 const radiusFactor = 30;
                 const leftPercent = 50 + radiusFactor * Math.cos(radians);
                 const topPercent = 50 - radiusFactor * Math.sin(radians);
@@ -343,7 +370,7 @@ export default function InteroperabilityArchitecture({ playAudioClick, onOpenAr 
                 TRANSMISSÃO CRIPTOGRÁFICA EM CURSO...
               </span>
               <p className="text-xs text-slate-300 leading-relaxed">
-                As pautas do Huambo, prontuários do MINSA, registos civis da maternidade e bases do B.I. estão a consolidar registros no CORE SILA do cidadão Sérgio Chilombo.
+                As pautas do Huambo, prontuários do MINSA, registos civis da maternidade e bases do B.I. estão a consolidar registos no CORE SILA do cidadão Sérgio Chilombo.
               </p>
               <div className="h-1.5 bg-[#05070A] rounded-full overflow-hidden">
                 <motion.div
