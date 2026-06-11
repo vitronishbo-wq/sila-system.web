@@ -14,6 +14,7 @@ interface DemoVideo {
   description: string;
   theme: 'blue' | 'amber';
   tagline: string;
+  youtubeId?: string;
 }
 
 const VIDEOS_DATA: DemoVideo[] = [
@@ -25,6 +26,7 @@ const VIDEOS_DATA: DemoVideo[] = [
     description: 'Apresentação macro da infraestrutura nacional de Estado Digital, abrangendo a filosofia de dados desfragmentados e interoperabilidade federativa sob o lema "O cidadão fornece os dados uma única vez".',
     theme: 'blue',
     tagline: 'A revolução digital na Governação Angolana.',
+    youtubeId: '7TgrwMqKBKw'
   },
   {
     id: 'education',
@@ -225,6 +227,23 @@ export default function VideoPlayer({ playAudioClick }: VideoPlayerProps) {
                     {selectedVid.title}
                   </p>
                 </div>
+              </motion.div>
+            ) : selectedVid.youtubeId ? (
+              <motion.div
+                key="youtube-playback"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 w-full h-full z-10"
+              >
+                <iframe
+                  className="w-full h-full border-0"
+                  src={`https://www.youtube.com/embed/${selectedVid.youtubeId}?autoplay=1&rel=0&modestbranding=1&controls=1`}
+                  title={selectedVid.title}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  referrerPolicy="no-referrer"
+                />
               </motion.div>
             ) : (
               <motion.div

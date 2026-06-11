@@ -6,7 +6,7 @@ import {
 } from 'recharts';
 import { 
   TrendingUp, Users, School, LayoutGrid, RefreshCw, Layers, ShieldCheck, 
-  Database, Zap, Flame, Globe, AlertCircle, Play, Sliders
+  Database, Zap, Flame, Globe, AlertCircle, Play, Sliders, Leaf
 } from 'lucide-react';
 
 interface SovereignExecutiveDashboardProps {
@@ -42,6 +42,22 @@ const EFFICIENCY_METRICS = [
   { item: 'Consolidação Nacional', manual: 43200, sila: 2 } // in minutes (30 days vs 2s)
 ];
 
+// CO2 emissions in kg of CO2 equivalent (Traditional vs SILA paperless & local-first networks)
+const CO2_EMISSIONS_DATA = [
+  { item: 'Circulação', tradicional: 540, sila: 12 }, // direct transport of administrative files
+  { item: 'Papelada', tradicional: 290, sila: 10 },    // process tree-to-pulp emission of files
+  { item: 'Armazenamento', tradicional: 180, sila: 22 },  // energy/air of physical vaults vs green servers
+  { item: 'Deslocamento', tradicional: 720, sila: 0 }    // family transit reduced by local-first networks
+];
+
+// Paper & Ink Cartridge economic savings data in Million Kwanzas (M AOA) for Huambo & Luanda
+const PAPER_INK_SAVINGS_DATA = [
+  { item: 'Huambo Papel', Tradicional: 120, SILA: 15, Poupança: 105 },
+  { item: 'Huambo Tinta', Tradicional: 85, SILA: 10, Poupança: 75 },
+  { item: 'Luanda Papel', Tradicional: 580, SILA: 45, Poupança: 535 },
+  { item: 'Luanda Tinta', Tradicional: 420, SILA: 35, Poupança: 385 }
+];
+
 export default function SovereignExecutiveDashboard({
   playAudioClick,
   isOffline = false
@@ -55,7 +71,8 @@ export default function SovereignExecutiveDashboard({
   const [selectedProvinceTab, setSelectedProvinceTab] = useState<'all' | 'high' | 'communal'>('all');
   const [simSpeed, setSimSpeed] = useState<number>(3000); // ms per simulated citizen integration
   const [isSimulatingLoad, setIsSimulatingLoad] = useState(true);
-  const [comparisonMetric, setComparisonMetric] = useState<'Kz' | 'Time'>('Time');
+  const [comparisonMetric, setComparisonMetric] = useState<'Kz' | 'Time' | 'CO2'>('Time');
+  const [kwanzaSubTab, setKwanzaSubTab] = useState<'paperInk' | 'hist'>('paperInk');
 
   // Trigger sound effect auxiliary
   const triggerSound = (type: 'hover' | 'activation' | 'click') => {
@@ -108,6 +125,32 @@ export default function SovereignExecutiveDashboard({
     // 'communal' / smaller regions focus
     return PROVINCE_DISTRIBUTION_DATA.filter(p => p.cadastrados < 150000);
   }, [selectedProvinceTab]);
+
+  // Custom tooltip for Kwanza Paper/Ink Savings
+  const CustomKzTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length >= 2) {
+      const trad = payload[0].value;
+      const sila = payload[1].value;
+      const savings = payload[0].payload?.Poupança !== undefined ? payload[0].payload.Poupança : (trad - sila);
+      return (
+        <div className="bg-[#090d14]/95 border border-white/10 p-2.5 rounded-xl shadow-xl text-[10px] font-mono whitespace-nowrap">
+          <p className="text-slate-200 font-semibold mb-1 border-b border-white/5 pb-1 uppercase tracking-wider">{label}</p>
+          <p className="text-rose-455 flex items-center gap-1.5 font-bold text-rose-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+            Tradicional: <span>{trad} M AOA</span>
+          </p>
+          <p className="text-emerald-455 flex items-center gap-1.5 font-bold text-emerald-400 mt-0.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            SILA Opt: <span>{sila} M AOA</span>
+          </p>
+          <p className="text-[#FFB800] border-t border-white/5 pt-1 mt-1 font-bold flex items-center gap-1.5">
+            Poupança: <span>{savings} M AOA</span>
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <div 
@@ -366,19 +409,28 @@ export default function SovereignExecutiveDashboard({
               </p>
             </div>
 
-            {/* Toggle state comparing time reduction or economic benefit */}
+            {/* Toggle state comparing time reduction, economic benefit, or ecological CO2 offset */}
             <div className="flex bg-white/5 border border-white/10 rounded-lg p-0.5 text-[9px] font-mono no-print">
               <button
+                type="button"
                 onClick={() => { setComparisonMetric('Time'); triggerSound('hover'); }}
                 className={`px-2 py-1 rounded-md font-bold transition-all ${comparisonMetric === 'Time' ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white' : 'text-slate-400 hover:text-slate-200'}`}
               >
                 TEMPO
               </button>
               <button
+                type="button"
                 onClick={() => { setComparisonMetric('Kz'); triggerSound('hover'); }}
                 className={`px-2 py-1 rounded-md font-bold transition-all ${comparisonMetric === 'Kz' ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white' : 'text-slate-400 hover:text-slate-200'}`}
               >
-                Kwanza
+                KWANZA
+              </button>
+              <button
+                type="button"
+                onClick={() => { setComparisonMetric('CO2'); triggerSound('hover'); }}
+                className={`px-2 py-1 rounded-md font-bold transition-all ${comparisonMetric === 'CO2' ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white' : 'text-slate-400 hover:text-slate-200'}`}
+              >
+                CO₂ ECO
               </button>
             </div>
           </div>
@@ -418,31 +470,113 @@ export default function SovereignExecutiveDashboard({
                 </span>
               </div>
             </div>
+          ) : comparisonMetric === 'Kz' ? (
+            <div className="space-y-4">
+              {/* Inner mini sub-tabs to toggle between Papel/Tinteiro comparative bar chart & Histórico Geral line chart */}
+              <div className="flex bg-white/5 border border-white/10 rounded-lg p-0.5 text-[9px] font-mono no-print">
+                <button
+                  type="button"
+                  onClick={() => { setKwanzaSubTab('paperInk'); triggerSound('click'); }}
+                  className={`flex-1 py-1 rounded-md font-bold transition-all ${kwanzaSubTab === 'paperInk' ? 'bg-[#FFB800] text-black shadow' : 'text-slate-400 hover:text-slate-200'}`}
+                >
+                  PAPEL & TINTA SAVINGS
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setKwanzaSubTab('hist'); triggerSound('click'); }}
+                  className={`flex-1 py-1 rounded-md font-bold transition-all ${kwanzaSubTab === 'hist' ? 'bg-[#FFB800] text-black shadow' : 'text-slate-400 hover:text-slate-200'}`}
+                >
+                  HISTÓRICO ACUMULADO
+                </button>
+              </div>
+
+              {kwanzaSubTab === 'paperInk' ? (
+                <div className="space-y-3">
+                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                    Custos anuais diretos com papelada e tinteiros de impressão no modelo Tradicional vs. SILA Digital (em milhões de Kwanzas AOA) no Huambo e Luanda.
+                  </p>
+
+                  {/* Comparative horizontal or vertical bar chart */}
+                  <div className="h-44 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={PAPER_INK_SAVINGS_DATA} margin={{ top: 5, right: 5, left: -25, bottom: 5 }} barGap={4}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.02)" vertical={false} />
+                        <XAxis dataKey="item" stroke="rgba(255,255,255,0.15)" tick={{ fontSize: 7, fontFamily: 'monospace' }} />
+                        <YAxis stroke="rgba(255,255,255,0.15)" tick={{ fontSize: 8, fontFamily: 'monospace' }} />
+                        <Tooltip content={<CustomKzTooltip />} />
+                        <Bar name="Tradicional" dataKey="Tradicional" fill="rgba(244, 63, 94, 0.4)" stroke="rgba(244, 63, 94, 0.7)" strokeWidth={1} radius={[2, 2, 0, 0]} />
+                        <Bar name="SILA Opt" dataKey="SILA" fill="#10b981" stroke="#10b981" strokeWidth={1} radius={[2, 2, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-center text-[9px] font-mono leading-tight">
+                    <div className="p-2 rounded-xl bg-orange-500/5 border border-orange-500/10">
+                      <span className="text-slate-500 block mb-0.5">POUPANÇA HUAMBO:</span>
+                      <span className="text-xs font-bold text-slate-200">180M AOA / Ano</span>
+                    </div>
+                    <div className="p-2 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
+                      <span className="text-slate-500 block mb-0.5">POUPANÇA LUANDA:</span>
+                      <span className="text-xs font-bold text-emerald-400">920M AOA / Ano</span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                    Poupança acumulada estimada em milhões de Kwanzas (Kz) devido à abolição de papel selado, emolumentos e logística física de arquivos municipais.
+                  </p>
+
+                  {/* Economic chart Recharts */}
+                  <div className="h-44 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={MONTHLY_HISTORICAL_DATA} margin={{ top: 5, right: 5, left: -25, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.02)" vertical={false} />
+                        <XAxis dataKey="month" stroke="rgba(255,255,255,0.15)" tick={{ fontSize: 9, fontFamily: 'monospace' }} />
+                        <YAxis stroke="rgba(255,255,255,0.15)" tick={{ fontSize: 9, fontFamily: 'monospace' }} />
+                        <Tooltip contentStyle={{ backgroundColor: '#090d14', border: '1px solid rgba(255,255,255,0.1)', fontSize: '10px', fontFamily: 'monospace' }} />
+                        <Line type="monotone" dataKey="economiaKz" name="Milhões de Kz" stroke="#FFB800" strokeWidth={2} dot={{ fill: '#FFB800', r: 3 }} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/10 text-center font-mono">
+                    <span className="text-[10px] text-emerald-400 font-bold block">
+                      ECONOMIA ATUAL ACUMULADA:
+                    </span>
+                    <span className="text-lg font-bold text-slate-100 block mt-0.5">
+                      198.000.000 Kz
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
           ) : (
             <div className="space-y-4">
               <p className="text-[11px] text-slate-400 leading-relaxed">
-                Economia acumulada estimada em milhões de Kwanzas (Kz) devido à abolição de papel selado, emolumentos e logística física de arquivos municipais.
+                Redução de emissões de CO₂ (kg CO₂eq) com a digitalização de processos burocráticos e eliminação de deslocações físicas de cidadãos e malhas de circulação interna.
               </p>
 
-              {/* Economic chart Recharts */}
+              {/* CO2 Chart Recharts */}
               <div className="h-44 w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={MONTHLY_HISTORICAL_DATA} margin={{ top: 5, right: 5, left: -25, bottom: 5 }}>
+                  <BarChart data={CO2_EMISSIONS_DATA} margin={{ top: 5, right: 5, left: -25, bottom: 5 }} barGap={5}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.02)" vertical={false} />
-                    <XAxis dataKey="month" stroke="rgba(255,255,255,0.15)" tick={{ fontSize: 9, fontFamily: 'monospace' }} />
-                    <YAxis stroke="rgba(255,255,255,0.15)" tick={{ fontSize: 9, fontFamily: 'monospace' }} />
+                    <XAxis dataKey="item" stroke="rgba(255,255,255,0.15)" tick={{ fontSize: 8, fontFamily: 'monospace' }} />
+                    <YAxis stroke="rgba(255,255,255,0.15)" tick={{ fontSize: 8, fontFamily: 'monospace' }} />
                     <Tooltip contentStyle={{ backgroundColor: '#090d14', border: '1px solid rgba(255,255,255,0.1)', fontSize: '10px', fontFamily: 'monospace' }} />
-                    <Line type="monotone" dataKey="economiaKz" name="Milhões de Kz" stroke="#FFB800" strokeWidth={2} dot={{ fill: '#FFB800', r: 3 }} />
-                  </LineChart>
+                    <Bar name="Tradicional" dataKey="tradicional" fill="rgba(244, 63, 94, 0.45)" stroke="rgba(244, 63, 94, 0.7)" strokeWidth={1} radius={[2, 2, 0, 0]} />
+                    <Bar name="SILA Verde" dataKey="sila" fill="#10b981" stroke="#10b981" strokeWidth={1} radius={[2, 2, 0, 0]} />
+                  </BarChart>
                 </ResponsiveContainer>
               </div>
 
               <div className="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/10 text-center font-mono">
-                <span className="text-[10px] text-emerald-400 font-bold block">
-                  ECONOMIA ATUAL ACUMULADA:
+                <span className="text-[10px] text-emerald-400 font-bold block flex items-center justify-center gap-1">
+                  <Leaf className="w-3.5 h-3.5" /> PEGADA DE CO₂ EVITADA:
                 </span>
-                <span className="text-lg font-bold text-slate-100 block mt-0.5">
-                  198.000.000 Kz
+                <span className="text-sm font-bold text-slate-100 block mt-0.5">
+                  Poupança de 1.686 kg de CO₂eq / Ano
                 </span>
               </div>
             </div>
