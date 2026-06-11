@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   Briefcase, FileCheck, HelpCircle, GraduationCap, Server, 
   Users, Users2, ShieldAlert, ArrowRight, ShieldCheck, CheckCircle, 
-  Workflow, Database, Landmark, RefreshCw, KeyRound, Globe
+  Workflow, Database, Landmark, RefreshCw, KeyRound, Globe, History, QrCode
 } from 'lucide-react';
 
 interface Protocol {
@@ -451,6 +451,108 @@ export default function PilotProtocolVisualizer() {
           </AnimatePresence>
         </div>
 
+      </div>
+
+      {/* Histórico de Revisão Técnica e Assinatura Digital MAT */}
+      <div className="bg-[#05070a]/50 border border-white/5 rounded-2xl p-4 sm:p-5 space-y-4 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-xl pointer-events-none" />
+        
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-3">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 bg-blue-500/10 rounded-lg text-blue-400">
+              <History className="w-4 h-4" />
+            </div>
+            <div>
+              <h4 className="text-xs font-mono font-bold text-slate-200 uppercase tracking-wider">Histórico de Revisões Regulamentares</h4>
+              <p className="text-[10px] text-slate-500 font-sans">Rastreamento de atualizações normativas e assinaturas digitais aplicadas pelo MAT</p>
+            </div>
+          </div>
+          
+          <div className="flex flex-wrap items-center gap-3 self-start sm:self-auto shrink-0">
+            <div className="flex items-center gap-2 bg-[#FFB800]/5 border border-[#FFB800]/10 px-2.5 py-1 rounded-lg">
+              <QrCode className="w-3.5 h-3.5 text-[#FFB800]" />
+              <span className="text-[9px] font-mono text-slate-300">Selo de Autenticidade MAT: <strong className="text-amber-400">CERT-MAT-2026-X89</strong></span>
+            </div>
+
+            {/* Custom Interactive digital signature badge with tooltip */}
+            <div className="relative inline-block group">
+              <div className="flex items-center gap-2 bg-emerald-500/5 hover:bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg cursor-help transition-all">
+                <FileCheck className="w-3.5 h-3.5 text-emerald-400 animate-[pulse_2s_infinite]" />
+                <span className="text-[9px] font-mono text-emerald-400 font-semibold uppercase tracking-wider flex items-center gap-1 leading-none select-none">
+                  Assinatura Digital
+                </span>
+              </div>
+              
+              {/* Tooltip Content */}
+              <div className="absolute right-0 bottom-full mb-2 w-72 bg-[#0c101a] border border-emerald-500/30 rounded-xl p-3.5 shadow-[0_4px_30px_rgba(0,0,0,0.8),0_0_20px_rgba(16,185,129,0.15)] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 pointer-events-none text-left leading-relaxed">
+                <div className="flex items-center gap-1.5 border-b border-emerald-500/10 pb-2 mb-2">
+                  <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span className="text-[10px] font-mono font-bold tracking-wider text-emerald-400 uppercase">
+                    Validade ICP-Angola Ativa
+                  </span>
+                </div>
+                <div className="space-y-1.5 text-[10px] font-sans text-slate-300">
+                  <p>
+                    Este protocolo possui <strong className="text-white">validade jurídica plena e absoluta</strong> em todo o território nacional.
+                  </p>
+                  <p>
+                    Assinado eletronicamente com criptografia de alta segurança e chaves públicas qualificadas em estrita conformidade com as normas regulamentares do <strong className="text-white">ICP-Angola</strong> (Decreto Presidencial de Angola / INFOSI), garantindo integridade e não-repúdio.
+                  </p>
+                  <div className="flex items-center justify-between text-[8px] font-mono text-emerald-500 pt-1.5 border-t border-[#22c55e]/10">
+                    <span>PADRÃO: x509 V3 SMIME</span>
+                    <span>ESTADO: VÁLIDO & SEGURO</span>
+                  </div>
+                </div>
+                {/* Pointer Arrow */}
+                <div className="absolute top-full right-8 -mt-[1px] border-[5px] border-transparent border-t-[#0c101a]" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {/* Revision Card 1 */}
+          <div className="bg-[#020305]/60 hover:bg-[#020305]/95 border border-white/5 hover:border-blue-500/20 p-3 rounded-xl transition-all duration-300">
+            <div className="flex items-center justify-between">
+              <span className="text-[8.5px] font-mono text-blue-400 bg-blue-950/40 px-1.5 py-0.5 rounded font-bold">Rev. 1.0</span>
+              <span className="text-[9px] font-mono text-slate-500">12 Out 2025</span>
+            </div>
+            <h5 className="text-[11.5px] font-semibold text-slate-200 mt-1.5 font-sans">Acordo de Conexão Inicial</h5>
+            <p className="text-[10px] text-slate-400 mt-1 leading-normal">Homologação mútua do rácio de preenchimento pautal e provisionamento do Sandbox local no Huambo.</p>
+            <div className="mt-3.5 border-t border-white/5 pt-2 flex items-center justify-between gap-1 text-[8.5px] font-mono text-emerald-400">
+              <span className="flex items-center gap-1 leading-none"><KeyRound className="w-3 h-3 text-emerald-500 shrink-0" /> MAT ID: 89A2-BC11</span>
+              <span className="text-slate-500 font-bold uppercase text-[7.5px] tracking-wider leading-none">Arquivado</span>
+            </div>
+          </div>
+
+          {/* Revision Card 2 */}
+          <div className="bg-[#020305]/60 hover:bg-[#020305]/95 border border-white/5 hover:border-blue-500/20 p-3 rounded-xl transition-all duration-300">
+            <div className="flex items-center justify-between">
+              <span className="text-[8.5px] font-mono text-amber-400 bg-amber-950/40 px-1.5 py-0.5 rounded font-bold">Rev. 1.1</span>
+              <span className="text-[9px] font-mono text-slate-500">18 Jan 2026</span>
+            </div>
+            <h5 className="text-[11.5px] font-semibold text-slate-200 mt-1.5 font-sans">Ajuste de Diretrizes de BI</h5>
+            <p className="text-[10px] text-slate-400 mt-1 leading-normal">Parâmetros de proteção de identidade alinhados com o novo Regulamento de Proteção de Dados de Angola.</p>
+            <div className="mt-3.5 border-t border-white/5 pt-2 flex items-center justify-between gap-1 text-[8.5px] font-mono text-emerald-400">
+              <span className="flex items-center gap-1 leading-none"><KeyRound className="w-3 h-3 text-emerald-500 shrink-0" /> MAT ID: C90F-8812</span>
+              <span className="text-slate-500 font-bold uppercase text-[7.5px] tracking-wider leading-none">Homologado</span>
+            </div>
+          </div>
+
+          {/* Revision Card 3 */}
+          <div className="bg-[#020305]/60 hover:bg-[#020305]/95 border border-white/5 hover:border-[#FFB800]/20 p-3 rounded-xl transition-all duration-300">
+            <div className="flex items-center justify-between">
+              <span className="text-[8.5px] font-mono text-[#FFB800] bg-amber-950/50 px-1.5 py-0.5 rounded font-bold">Rev. 2.0 (Atual)</span>
+              <span className="text-[9px] font-mono text-slate-500">11 Jun 2026</span>
+            </div>
+            <h5 className="text-[11.5px] font-semibold text-slate-200 mt-1.5 font-sans">Assinatura Digital Soberana</h5>
+            <p className="text-[10px] text-slate-400 mt-1 leading-normal">Sinfonia de chaves fiduciárias imutáveis que selam a conformidade civil e acadêmica integrados na FUC.</p>
+            <div className="mt-3.5 border-t border-white/5 pt-2 flex items-center justify-between gap-1 text-[8.5px] font-mono text-emerald-400">
+              <span className="flex items-center gap-1 leading-none"><KeyRound className="w-3 h-3 text-emerald-500 shrink-0" /> MAT ID: FF99-0012</span>
+              <span className="text-emerald-500 font-bold uppercase text-[7.5px] tracking-wider leading-none">Sincronizado</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Summary diagram highlighting integrated structure */}

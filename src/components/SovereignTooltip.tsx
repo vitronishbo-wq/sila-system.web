@@ -7,9 +7,10 @@ interface SovereignTooltipProps {
   explanation: string;
   children?: React.ReactNode;
   playAudioClick?: (type?: 'hover' | 'activation' | 'click') => void;
+  variant?: 'default' | 'clean';
 }
 
-export default function SovereignTooltip({ term, explanation, children, playAudioClick }: SovereignTooltipProps) {
+export default function SovereignTooltip({ term, explanation, children, playAudioClick, variant = 'default' }: SovereignTooltipProps) {
   const [isVisible, setIsVisible] = useState(false);
 
   const handleMouseEnter = () => {
@@ -27,9 +28,13 @@ export default function SovereignTooltip({ term, explanation, children, playAudi
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      <span className="underline decoration-dotted decoration-blue-500/60 hover:decoration-blue-400 text-blue-400 font-medium transition-colors">
-        {children || term}
-      </span>
+      {variant === 'clean' ? (
+        children || term
+      ) : (
+        <span className="underline decoration-dotted decoration-blue-500/60 hover:decoration-blue-400 text-blue-400 font-medium transition-colors">
+          {children || term}
+        </span>
+      )}
       
       <AnimatePresence>
         {isVisible && (

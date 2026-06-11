@@ -74,6 +74,15 @@ export default function SovereignExecutiveDashboard({
   const [comparisonMetric, setComparisonMetric] = useState<'Kz' | 'Time' | 'CO2'>('Time');
   const [kwanzaSubTab, setKwanzaSubTab] = useState<'paperInk' | 'hist'>('paperInk');
 
+  // Background Sync and Stateful Data for MAT Auto-Refresh
+  const [historicalData, setHistoricalData] = useState(MONTHLY_HISTORICAL_DATA);
+  const [provinceData, setProvinceData] = useState(PROVINCE_DISTRIBUTION_DATA);
+  const [isBackgroundSyncEnabled, setIsBackgroundSyncEnabled] = useState(true);
+  const [bgSyncCountdown, setBgSyncCountdown] = useState(30);
+  const [isBgSyncing, setIsBgSyncing] = useState(false);
+  const [showSyncToast, setShowSyncToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+
   // Trigger sound effect auxiliary
   const triggerSound = (type: 'hover' | 'activation' | 'click') => {
     if (playAudioClick) playAudioClick(type);
@@ -106,6 +115,83 @@ export default function SovereignExecutiveDashboard({
     return () => clearInterval(interval);
   }, [isOffline, simSpeed, isSimulatingLoad, syncQueue]);
 
+  // 30 seconds countdown background synchronizer to check if MAT has published new dematerialization data
+  useEffect(() => {
+    if (!isBackgroundSyncEnabled) return;
+
+    const countdownTimer = setInterval(() => {
+      setBgSyncCountdown(prev => {
+        if (prev <= 1) {
+          // Start the silent check process
+          setIsBgSyncing(true);
+
+          // Hold validation spinner for 2 seconds to simulate network overhead
+          setTimeout(() => {
+            setIsBgSyncing(false);
+
+            // Generate randomized new dematerialized batches published by MAT
+            const newFucs = Math.floor(Math.random() * 65) + 35; // 35-100 new citizen profiles
+            const newMatriculas = Math.floor(Math.random() * 25) + 8; // 8-33 new school registrations
+
+            // 1. Update overall counters
+            setLiveCitizens(c => c + newFucs);
+            setLiveMatriculas(m => m + newMatriculas);
+            setLastSyncTime(new Date().toLocaleTimeString('pt-AO'));
+
+            // 2. Refresh the custom AreaChart (historicalData state) in June
+            setHistoricalData(curr => curr.map(item => {
+              if (item.month.includes('Jun')) {
+                return {
+                  ...item,
+                  cidadaos: item.cidadaos + newFucs,
+                  matriculas: item.matriculas + newMatriculas,
+                  economiaKz: Number((item.economiaKz + (newFucs * 0.12)).toFixed(1))
+                };
+              }
+              return item;
+            }));
+
+            // 3. Update BarChart (provinceData state) by splitting registrations between Luanda & Huambo
+            setProvinceData(curr => curr.map(prov => {
+              if (prov.name === 'Huambo') {
+                return {
+                  ...prov,
+                  cadastrados: prov.cadastrados + Math.floor(newFucs * 0.4),
+                  matriculas: prov.matriculas + Math.floor(newMatriculas * 0.4)
+                };
+              } else if (prov.name === 'Luanda') {
+                return {
+                  ...prov,
+                  cadastrados: prov.cadastrados + Math.floor(newFucs * 0.6),
+                  matriculas: prov.matriculas + Math.floor(newMatriculas * 0.6)
+                };
+              }
+              return prov;
+            }));
+
+            // 4. Set the silent notification toast details
+            setToastMessage(`SILA Sincronia: +${newFucs} Cidadãos desmaterializados e +${newMatriculas} Matrículas ativas homologadas no sistema central pelo MAT.`);
+            setShowSyncToast(true);
+
+            // Play a highly silent/subtle notification sound (or trigger sound click if set)
+            if (playAudioClick) playAudioClick('hover');
+
+            // Automatically dismisses toast after 5 seconds
+            setTimeout(() => {
+              setShowSyncToast(false);
+            }, 5500);
+
+          }, 2000);
+
+          return 30; // Reset countdown to 30
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(countdownTimer);
+  }, [isBackgroundSyncEnabled, playAudioClick]);
+
   // Flush local cache manually (SILA sync trigger simulation)
   const handleForceSync = () => {
     triggerSound('activation');
@@ -116,15 +202,15 @@ export default function SovereignExecutiveDashboard({
     }
   };
 
-  // Generate dynamic chart data based on active filters
+  // Generate dynamic chart data based on active filters (using our reactive state 'provinceData')
   const filteredProvinceData = useMemo(() => {
-    if (selectedProvinceTab === 'all') return PROVINCE_DISTRIBUTION_DATA;
+    if (selectedProvinceTab === 'all') return provinceData;
     if (selectedProvinceTab === 'high') {
-      return PROVINCE_DISTRIBUTION_DATA.filter(p => p.cadastrados > 150000);
+      return provinceData.filter(p => p.cadastrados > 150000);
     }
     // 'communal' / smaller regions focus
-    return PROVINCE_DISTRIBUTION_DATA.filter(p => p.cadastrados < 150000);
-  }, [selectedProvinceTab]);
+    return provinceData.filter(p => p.cadastrados < 150000);
+  }, [selectedProvinceTab, provinceData]);
 
   // Custom tooltip for Kwanza Paper/Ink Savings
   const CustomKzTooltip = ({ active, payload, label }: any) => {
@@ -158,6 +244,56 @@ export default function SovereignExecutiveDashboard({
       role="region"
       aria-label="Painel de Controle de Estatísticas Executivas e Métricas do SILA"
     >
+      {/* Sincronização em Segundo Plano (Background Sync Status Alert Overlay Toast) */}
+      <AnimatePresence>
+        {showSyncToast && (
+          <motion.div
+            initial={{ opacity: 0, y: -45, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -25, scale: 0.96 }}
+            transition={{ type: "spring", stiffness: 220, damping: 22 }}
+            className="absolute top-4 left-4 right-4 sm:left-auto sm:right-6 sm:w-[380px] bg-[#070a10]/95 border border-emerald-500/30 rounded-2xl p-4 shadow-[0_12px_40px_rgba(0,0,0,0.85),0_0_20px_rgba(16,185,129,0.15)] z-50 overflow-hidden backdrop-blur-md"
+          >
+            {/* Pulsating green accent strip */}
+            <div className="absolute top-0 left-0 right-0 h-[2.5px] bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-500 animate-[pulse_2.5s_infinite]" />
+            
+            <div className="flex items-start gap-3">
+              <div className="w-8.5 h-8.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
+                <RefreshCw className="w-4 h-4 animate-[spin_4s_linear_infinite]" />
+              </div>
+              <div className="flex-1 space-y-1 select-none text-left">
+                <div className="flex items-center justify-between">
+                  <span className="text-[9px] font-mono font-extrabold uppercase tracking-widest text-[#FFB800] bg-white/[0.04] px-1.5 py-0.5 rounded border border-white/[0.05]">
+                    Sincronização em Segundo Plano
+                  </span>
+                  <span className="text-[8px] font-mono text-slate-500">
+                    Agora mesmo
+                  </span>
+                </div>
+                <h5 className="text-[11.5px] font-bold text-white font-sans leading-snug">
+                  Métricas Sincronizadas (MAT Offline)
+                </h5>
+                <p className="text-[10px] text-slate-300 leading-relaxed font-sans">
+                  {toastMessage}
+                </p>
+                <div className="text-[8px] font-mono text-slate-500 pt-1 border-t border-white/5 flex justify-between items-center bg-white/[0.01] px-1 rounded">
+                  <span>ATUALIZADO AUTOMATICAMENTE</span>
+                  <span>STATUS: 200 OK</span>
+                </div>
+              </div>
+              
+              <button 
+                type="button"
+                onClick={() => setShowSyncToast(false)}
+                className="text-slate-500 hover:text-slate-300 transition-colors text-sm font-mono font-bold leading-none p-1 cursor-pointer"
+              >
+                ×
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Decorative Top glow beam */}
       <div className="absolute top-0 left-1/4 right-1/4 h-[1px] bg-gradient-to-r from-transparent via-blue-500/40 to-transparent"></div>
 
@@ -178,8 +314,9 @@ export default function SovereignExecutiveDashboard({
           </p>
         </div>
 
-        {/* Real-Time Live Status Ledger State bar */}
+        {/* Real-Time Live Status Ledger State bar & Background Sync controllers */}
         <div className="flex flex-wrap items-center gap-3 bg-white/[0.02] border border-white/10 rounded-2xl px-4 py-2.5 text-[11px] font-mono select-none">
+          {/* SILA Ledger State */}
           <div className="flex items-center gap-2 pr-3 border-r border-white/10">
             <div className="relative flex h-2.5 w-2.5">
               <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isOffline ? 'bg-amber-400' : 'bg-emerald-400'}`}></span>
@@ -191,6 +328,31 @@ export default function SovereignExecutiveDashboard({
             </span>
           </div>
 
+          {/* Background Sync Counter & Active Toggle */}
+          <div className="flex items-center gap-2 pr-3 border-r border-white/10">
+            <span className="text-slate-400">Autoresync MAT:</span>
+            <span className={`flex items-center gap-1.5 font-bold transition-colors ${isBgSyncing ? 'text-emerald-400' : 'text-sky-400'}`}>
+              <RefreshCw className={`w-3 h-3 ${isBgSyncing ? 'animate-spin' : ''}`} />
+              <span>{isBgSyncing ? 'A sincronizar...' : `${bgSyncCountdown}s`}</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setIsBackgroundSyncEnabled(!isBackgroundSyncEnabled);
+                triggerSound('click');
+              }}
+              className={`ml-1.5 px-2 py-0.5 rounded-[5px] text-[8.5px] uppercase tracking-wider font-extrabold cursor-pointer border transition-all duration-200 ${
+                isBackgroundSyncEnabled 
+                  ? 'bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border-sky-500/30 font-bold' 
+                  : 'bg-white/5 hover:bg-white/10 text-slate-500 border-white/5'
+              }`}
+              title={isBackgroundSyncEnabled ? "Pausar Sincronização em Segundo Plano" : "Ativar Sincronização em Segundo Plano"}
+            >
+              {isBackgroundSyncEnabled ? "● AUTO-ATIVO" : "⏸ PAUSADO"}
+            </button>
+          </div>
+
+          {/* Last Sync Details */}
           <div className="flex items-center gap-2">
             <span className="text-slate-500">Última Sincronização:</span>
             <span className="text-blue-400 font-bold">{lastSyncTime}</span>
@@ -336,7 +498,7 @@ export default function SovereignExecutiveDashboard({
           <div className="h-64 sm:h-72 w-full no-print">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart
-                data={MONTHLY_HISTORICAL_DATA}
+                data={historicalData}
                 margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
               >
                 <defs>
@@ -530,7 +692,7 @@ export default function SovereignExecutiveDashboard({
                   {/* Economic chart Recharts */}
                   <div className="h-44 w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={MONTHLY_HISTORICAL_DATA} margin={{ top: 5, right: 5, left: -25, bottom: 5 }}>
+                      <LineChart data={historicalData} margin={{ top: 5, right: 5, left: -25, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.02)" vertical={false} />
                         <XAxis dataKey="month" stroke="rgba(255,255,255,0.15)" tick={{ fontSize: 9, fontFamily: 'monospace' }} />
                         <YAxis stroke="rgba(255,255,255,0.15)" tick={{ fontSize: 9, fontFamily: 'monospace' }} />

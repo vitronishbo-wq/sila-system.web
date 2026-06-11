@@ -6,12 +6,13 @@ import {
   Shield, Calendar, Users, Map, CheckCircle2, Circle, TrendingUp, Compass, 
   FileText, ChevronDown, ChevronUp, MapPin, Landmark, Cpu, Database, 
   AlertCircle, FileSpreadsheet, KeyRound, Download, Check, Info, FileSignature, HelpCircle,
-  TrendingDown, Coins, Percent, ArrowRight, LayoutGrid, Activity
+  TrendingDown, Coins, Percent, ArrowRight, LayoutGrid, Activity, Award, Sparkles
 } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell
 } from 'recharts';
 import PilotProtocolVisualizer from './PilotProtocolVisualizer';
+import SovereignTooltip from './SovereignTooltip';
 
 interface PilotProposalsProps {
   playAudioClick?: () => void;
@@ -113,6 +114,7 @@ const SAVINGS_PROJECTIONS_DATA: Record<'huambo' | 'luanda', {
 export default function PilotProposals({ playAudioClick }: PilotProposalsProps) {
   const [selectedPhase, setSelectedPhase] = useState<PilotPhase>(PILOT_PHASES[0]);
   const [showOfficialProtocol, setShowOfficialProtocol] = useState<boolean>(false);
+  const [burstCount, setBurstCount] = useState<number>(0);
   
   // Interactive sub-tabs for the deep dive
   const [pilotSubTab, setPilotSubTab] = useState<'overview' | 'municipalities' | 'med-protocols' | 'savings'>('overview');
@@ -138,6 +140,12 @@ export default function PilotProposals({ playAudioClick }: PilotProposalsProps) 
   const netEconomy = totalTraditional - totalSila;
   const economyPercent = totalTraditional > 0 ? ((netEconomy / totalTraditional) * 100).toFixed(0) : '0';
 
+  // Derived Goal progress for Huambo & Luanda
+  const savingsTarget = selectedSavingsProvince === 'huambo' ? 500 : 2500;
+  const goalPercentVal = (netEconomy / savingsTarget) * 100;
+  const goalPercentStr = goalPercentVal.toFixed(1);
+  const progressWidth = Math.min(100, Math.max(0, goalPercentVal));
+
   const handlePhaseChange = (phase: PilotPhase) => {
     setSelectedPhase(phase);
     if (playAudioClick) playAudioClick();
@@ -146,6 +154,56 @@ export default function PilotProposals({ playAudioClick }: PilotProposalsProps) 
   const handleToggleProtocol = () => {
     setShowOfficialProtocol(!showOfficialProtocol);
     if (playAudioClick) playAudioClick();
+  };
+
+  const handleExportCSV = () => {
+    if (playAudioClick) playAudioClick();
+
+    const hbe = SAVINGS_PROJECTIONS_DATA.huambo.items.map(item => ({
+      province: 'Huambo',
+      category: item.category,
+      sector: item.sector,
+      traditional: item.traditionalCost,
+      sila: item.silaCost,
+      economy: item.traditionalCost - item.silaCost,
+      details: item.details
+    }));
+
+    const lda = SAVINGS_PROJECTIONS_DATA.luanda.items.map(item => ({
+      province: 'Luanda',
+      category: item.category,
+      sector: item.sector,
+      traditional: item.traditionalCost,
+      sila: item.silaCost,
+      economy: item.traditionalCost - item.silaCost,
+      details: item.details
+    }));
+
+    const records = [...hbe, ...lda];
+    const headers = ['Província', 'Categoria', 'Setor', 'Custo Tradicional (M AOA)', 'Custo SILA (M AOA)', 'Economia Líquida (M AOA)', 'Detalhes'];
+    
+    const csvRows = [
+      headers.join(','),
+      ...records.map(r => [
+        `"${r.province}"`,
+        `"${r.category}"`,
+        `"${r.sector}"`,
+        r.traditional,
+        r.sila,
+        r.economy,
+        `"${r.details.replace(/"/g, '""')}"`
+      ].join(','))
+    ];
+
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `SILA_Metricas_Economia_Huambo_Luanda_2026.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const CustomSavingsTooltip = ({ active, payload, label }: any) => {
@@ -603,7 +661,7 @@ export default function PilotProposals({ playAudioClick }: PilotProposalsProps) 
             </div>
 
             {/* Filtro por Setor Controller Bar */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-2xl bg-[#05070a]/40 border border-white/5">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-4 rounded-2xl bg-[#05070a]/40 border border-white/5">
               <div className="space-y-0.5">
                 <span className="text-[10px] uppercase font-mono tracking-widest text-[#FFB800] font-bold block">
                   Filtrar Projeção de Economia por Setor
@@ -613,55 +671,67 @@ export default function PilotProposals({ playAudioClick }: PilotProposalsProps) 
                 </p>
               </div>
 
-              {/* Selector buttons */}
-              <div className="flex flex-wrap bg-[#020305]/80 border border-white/10 p-1 rounded-xl shrink-0 gap-1 select-none">
+              {/* Selector buttons Group */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto shrink-0">
+                <div className="flex flex-wrap bg-[#020305]/80 border border-white/10 p-1 rounded-xl gap-1 select-none flex-1 sm:flex-initial">
+                  <button
+                    type="button"
+                    onClick={() => { setSelectedSector('all'); if (playAudioClick) playAudioClick(); }}
+                    className={`px-3 py-1.5 rounded-lg text-[10px] font-mono tracking-wider transition-all duration-200 cursor-pointer flex items-center justify-center gap-1.5 flex-1 sm:flex-initial ${
+                      selectedSector === 'all'
+                        ? 'bg-blue-600 font-semibold text-white'
+                        : 'text-slate-400 hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    <LayoutGrid className="w-3.5 h-3.5" />
+                    Todos Setores
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setSelectedSector('Educação'); if (playAudioClick) playAudioClick(); }}
+                    className={`px-3 py-1.5 rounded-lg text-[10px] font-mono tracking-wider transition-all duration-200 cursor-pointer flex items-center justify-center gap-1.5 flex-1 sm:flex-initial ${
+                      selectedSector === 'Educação'
+                        ? 'bg-blue-600 font-semibold text-white'
+                        : 'text-slate-400 hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    <Landmark className="w-3.5 h-3.5" />
+                    Educação
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setSelectedSector('Saúde'); if (playAudioClick) playAudioClick(); }}
+                    className={`px-3 py-1.5 rounded-lg text-[10px] font-mono tracking-wider transition-all duration-200 cursor-pointer flex items-center justify-center gap-1.5 flex-1 sm:flex-initial ${
+                      selectedSector === 'Saúde'
+                        ? 'bg-[#FFB800] text-black font-semibold'
+                        : 'text-slate-400 hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    <Activity className="w-3.5 h-3.5" />
+                    Saúde
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setSelectedSector('Administração'); if (playAudioClick) playAudioClick(); }}
+                    className={`px-3 py-1.5 rounded-lg text-[10px] font-mono tracking-wider transition-all duration-200 cursor-pointer flex items-center justify-center gap-1.5 flex-1 sm:flex-initial ${
+                      selectedSector === 'Administração'
+                        ? 'bg-emerald-600 font-semibold text-white'
+                        : 'text-slate-400 hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    Administração
+                  </button>
+                </div>
+
                 <button
                   type="button"
-                  onClick={() => { setSelectedSector('all'); if (playAudioClick) playAudioClick(); }}
-                  className={`px-3 py-1.5 rounded-lg text-[10px] font-mono tracking-wider transition-all duration-200 cursor-pointer flex items-center gap-1.5 ${
-                    selectedSector === 'all'
-                      ? 'bg-blue-600 font-semibold text-white'
-                      : 'text-slate-400 hover:text-white hover:bg-white/5'
-                  }`}
+                  onClick={handleExportCSV}
+                  className="px-3.5 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 active:scale-95 border border-emerald-500/20 hover:border-emerald-500/40 rounded-xl text-[10px] font-mono font-bold text-emerald-400 hover:text-white transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                  title="Exportar dados brutos das projeções offline em formato CSV"
                 >
-                  <LayoutGrid className="w-3.5 h-3.5" />
-                  Todos Setores
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setSelectedSector('Educação'); if (playAudioClick) playAudioClick(); }}
-                  className={`px-3 py-1.5 rounded-lg text-[10px] font-mono tracking-wider transition-all duration-200 cursor-pointer flex items-center gap-1.5 ${
-                    selectedSector === 'Educação'
-                      ? 'bg-blue-600 font-semibold text-white'
-                      : 'text-slate-400 hover:text-white hover:bg-white/5'
-                  }`}
-                >
-                  <Landmark className="w-3.5 h-3.5" />
-                  Educação
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setSelectedSector('Saúde'); if (playAudioClick) playAudioClick(); }}
-                  className={`px-3 py-1.5 rounded-lg text-[10px] font-mono tracking-wider transition-all duration-200 cursor-pointer flex items-center gap-1.5 ${
-                    selectedSector === 'Saúde'
-                      ? 'bg-[#FFB800] text-black font-semibold'
-                      : 'text-slate-400 hover:text-white hover:bg-white/5'
-                  }`}
-                >
-                  <Activity className="w-3.5 h-3.5" />
-                  Saúde
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setSelectedSector('Administração'); if (playAudioClick) playAudioClick(); }}
-                  className={`px-3 py-1.5 rounded-lg text-[10px] font-mono tracking-wider transition-all duration-200 cursor-pointer flex items-center gap-1.5 ${
-                    selectedSector === 'Administração'
-                      ? 'bg-emerald-600 font-semibold text-white'
-                      : 'text-slate-400 hover:text-white hover:bg-white/5'
-                  }`}
-                >
-                  <FileText className="w-3.5 h-3.5" />
-                  Administração
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>EXPORTAR CSV</span>
                 </button>
               </div>
             </div>
@@ -703,6 +773,177 @@ export default function PilotProposals({ playAudioClick }: PilotProposalsProps) 
                 <p className="text-[10.5px] text-[#FFB800] font-sans mt-3 font-semibold">
                   Equivale a uma redução de {economyPercent}% das despesas operacionais simuladas selecionadas!
                 </p>
+              </div>
+            </div>
+
+            {/* PROGRESSO DA META (SAVINGS PROGRESS GOAL INDICATOR) */}
+            <div className="bg-[#05070a]/90 border border-emerald-500/15 p-5 rounded-2xl relative overflow-hidden backdrop-blur-sm shadow-[0_4px_30px_rgba(16,185,129,0.05)] w-full">
+              <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-500/[0.02] rounded-full blur-3xl pointer-events-none"></div>
+              
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 select-none">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                    <TrendingUp className="w-5 h-5 shrink-0" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase font-mono text-emerald-400 tracking-wider block font-bold leading-none mb-1">
+                      Progresso da Meta de Poupança Soberana
+                    </span>
+                    <h5 className="text-xs font-sans font-semibold text-slate-100">
+                      Nó de Ativação {selectedSavingsProvince === 'huambo' ? 'Huambo' : 'Luanda'} • Meta de Economia {selectedSector !== 'all' ? `(${selectedSector})` : ''}
+                    </h5>
+                  </div>
+                </div>
+
+                <div className="text-left sm:text-right font-mono">
+                  <span className="text-[9px] text-slate-500 block leading-tight">STATUS DO PARÂMETRO</span>
+                  <span className={`text-[10px] font-bold uppercase tracking-wider ${goalPercentVal >= 100 ? 'text-emerald-400' : 'text-[#FFB800]'}`}>
+                    {goalPercentVal >= 100 ? '✓ Meta Superada' : '⟳ Planeamento Ativo'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Progress Bar with detailed indicators */}
+              <div className="space-y-3 font-sans">
+                <div className="flex justify-between items-end text-xs gap-3">
+                  <div className="space-y-0.5">
+                    <span className="text-slate-500 text-[10px] block leading-none">Economia Líquida Alcançada:</span>
+                    <span className="text-base sm:text-lg font-bold text-white font-mono">{netEconomy} M AOA</span>
+                  </div>
+
+                  <div className="text-center shrink-0">
+                    <span className="text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full text-[11px] font-mono shadow-sm">
+                      {goalPercentStr}% da Meta
+                    </span>
+                  </div>
+
+                  <div className="text-right space-y-0.5">
+                    <span className="text-slate-500 text-[10px] block leading-none">Meta Projetada para o Piloto:</span>
+                    <span className="text-base sm:text-lg font-bold text-[#FFB800] font-mono">{savingsTarget} M AOA</span>
+                  </div>
+                </div>
+
+                {/* Progress bar line */}
+                <div className="h-4 bg-[#020305] border border-white/5 rounded-full overflow-hidden p-0.5 relative">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${progressWidth}%` }}
+                    transition={{ duration: 1.2, ease: "easeOut" }}
+                    className={`h-full rounded-full bg-gradient-to-r ${
+                      goalPercentVal >= 100 
+                        ? 'from-emerald-600 via-emerald-500 to-[#FFB800]' 
+                        : 'from-blue-600 via-blue-500 to-emerald-500'
+                    } relative`}
+                  >
+                    {/* Subtle animated shine effect */}
+                    <div className="absolute inset-0 bg-white/5 opacity-50 bg-[linear-gradient(45deg,rgba(255,255,255,0.15)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.15)_50%,rgba(255,255,255,0.15)_75%,transparent_75%,transparent)] bg-[size:16px_16px] animate-[pulse_2s_infinite]" />
+                  </motion.div>
+                </div>
+
+                <div className="flex justify-between items-center text-[9px] font-mono text-slate-500">
+                  <span>MARCO ZERO (0 M AOA)</span>
+                  <span className="hidden sm:inline text-slate-400 select-none">SILA Sincronia Estrita Integrada</span>
+                  <span>META MÁXIMA ({savingsTarget} M AOA)</span>
+                </div>
+
+                {/* ALERTA DE EFICIÊNCIA (EFFICIENCY CELEBRATION ALERT WHEN >= 80%) */}
+                <AnimatePresence>
+                  {goalPercentVal >= 80 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 15, scale: 0.98 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -10, scale: 0.98 }}
+                      transition={{ duration: 0.4, ease: "easeOut" }}
+                      className="mt-5 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl relative overflow-hidden backdrop-blur-sm shadow-[0_0_25px_rgba(16,185,129,0.12)] flex flex-col md:flex-row items-center gap-4 text-left"
+                    >
+                      {/* Confetti Container Overlay */}
+                      <div className="absolute inset-0 overflow-hidden pointer-events-none select-none z-0">
+                        {Array.from({ length: 24 }).map((_, i) => {
+                          // Generate pseudo-random coordinates based on index and manual bursts
+                          const randX = ((i * 39 + burstCount * 23) % 100);
+                          const randSize = ((i * 11) % 9) + 5; // 5 to 13px
+                          const randDelay = ((i * 7) % 20) / 10; // 0s to 2s
+                          const randDuration = ((i * 13) % 15) / 5 + 2.5; // 2.5s to 5.5s
+                          const colorArray = ['#10b981', '#3b82f6', '#ffb800', '#ec4899', '#f43f5e', '#a855f7'];
+                          const randColor = colorArray[(i + burstCount) % colorArray.length];
+                          const randShape = i % 3 === 0 ? 'rect' : i % 3 === 1 ? 'circle' : 'triangle';
+                          
+                          return (
+                            <motion.div
+                              key={`confetti-${i}-${burstCount}`}
+                              initial={{ y: 220, x: `${randX}%`, opacity: 1, rotate: 0, scale: 0.8 }}
+                              animate={{ 
+                                y: -40, 
+                                x: `${randX + ((i % 2 === 0 ? 12 : -12) * Math.sin(i))}%`, 
+                                opacity: [0, 1, 1, 0.4, 0], 
+                                rotate: 360 + (i * 45),
+                                scale: [0.8, 1.2, 1, 0.9, 0.6]
+                              }}
+                              transition={{ 
+                                duration: randDuration, 
+                                delay: randDelay, 
+                                ease: "easeOut",
+                                repeat: Infinity,
+                                repeatDelay: 0.3
+                              }}
+                              style={{
+                                position: 'absolute',
+                                width: `${randSize}px`,
+                                height: `${randSize}px`,
+                                backgroundColor: randShape === 'triangle' ? 'transparent' : randColor,
+                                borderRadius: randShape === 'circle' ? '50%' : '2px',
+                                borderLeft: randShape === 'triangle' ? `${randSize / 2}px solid transparent` : undefined,
+                                borderRight: randShape === 'triangle' ? `${randSize / 2}px solid transparent` : undefined,
+                                borderBottom: randShape === 'triangle' ? `${randSize}px solid ${randColor}` : undefined,
+                              }}
+                            />
+                          );
+                        })}
+                      </div>
+
+                      {/* Active glowing backdrop pulse */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 via-amber-500/5 to-emerald-500/5 bg-[length:200%_auto] animate-[pulse_4s_infinite] pointer-events-none" />
+
+                      {/* Main content illustration / Badge */}
+                      <div className="relative z-10 w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white shrink-0 shadow-lg shadow-emerald-500/20">
+                        <Award className="w-5.5 h-5.5 animate-[bounce_2.5s_infinite]" />
+                      </div>
+
+                      {/* Descriptions */}
+                      <div className="relative z-10 flex-1 space-y-1 select-none">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-[9.5px] font-mono font-extrabold uppercase tracking-widest text-[#FFB800] bg-white/[0.04] px-2 py-0.5 rounded border border-white/[0.06] flex items-center gap-1">
+                            <Sparkles className="w-3 h-3 text-[#FFB800]" /> Alerta de Eficiência Notável
+                          </span>
+                          <span className="text-[9px] font-mono text-emerald-400 font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded">
+                            SUPEROU 80% DA META! ({goalPercentStr}%)
+                          </span>
+                        </div>
+                        <p className="text-xs font-semibold text-slate-100 font-sans">
+                          Impacto de Economia Provada no Nó {selectedSavingsProvince === 'huambo' ? 'Huambo' : 'Luanda'}
+                        </p>
+                        <p className="text-[10.5px] text-slate-300 leading-relaxed max-w-xl">
+                          A otimização de custo soberano do barramento de dados SILA alcançou altos patamares de excelência operacional com conformidade fiscal e estabilização de despesas no plano nacional.
+                        </p>
+                      </div>
+
+                      {/* Interactive Button */}
+                      <div className="relative z-10 self-stretch flex items-center justify-center shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setBurstCount(prev => prev + 1);
+                            if (playAudioClick) playAudioClick();
+                          }}
+                          className="px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-300 hover:text-white rounded-lg text-[9px] font-mono font-semibold transition-all shadow-md active:scale-95 cursor-pointer flex items-center gap-1.5 whitespace-nowrap"
+                        >
+                          <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+                          <span>Disparar Brilhos</span>
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
 
@@ -837,17 +1078,35 @@ export default function PilotProposals({ playAudioClick }: PilotProposalsProps) 
 
       {/* Button to toggle official protocol details */}
       <div className="flex flex-col sm:flex-row justify-center items-center gap-3 pt-4 relative z-10 w-full border-t border-white/5">
-        <button
-          onClick={handleToggleProtocol}
-          className={`flex items-center gap-2.5 px-6 py-3.5 rounded-2xl border font-mono text-xs font-semibold tracking-wider transition-all duration-300 shadow-md cursor-pointer ${
-            showOfficialProtocol
-              ? 'bg-[#FFB800] text-black border-[#FFB800] hover:bg-[#e0a200]'
-              : 'bg-white/[0.02] text-slate-200 border-white/10 hover:border-white/20 hover:bg-white/[0.04]'
-          }`}
+        <SovereignTooltip 
+          term="Protocolo Oficial de Implantação" 
+          explanation="Documento jurídico fiduciário celebrado entre o Governo do Huambo e o MED que legisla as etapas de governança para o alcance da eficácia plena do SILA."
+          variant="clean"
+          playAudioClick={playAudioClick ? () => playAudioClick() : undefined}
         >
-          <FileText className="w-4 h-4" />
-          <span>{showOfficialProtocol ? 'OCULTAR CRONOGRAMA DE IMPLANTAÇÃO' : 'VER CRONOGRAMA INTEGRAL DE IMPLANTAÇÃO'}</span>
-          {showOfficialProtocol ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          <button
+            onClick={handleToggleProtocol}
+            className={`flex items-center gap-2.5 px-6 py-3.5 rounded-2xl border font-mono text-xs font-semibold tracking-wider transition-all duration-300 shadow-md cursor-pointer ${
+              showOfficialProtocol
+                ? 'bg-[#FFB800] text-black border-[#FFB800] hover:bg-[#e0a200]'
+                : 'bg-white/[0.02] text-slate-200 border-white/10 hover:border-white/20 hover:bg-white/[0.04]'
+            }`}
+          >
+            <FileText className="w-4 h-4" />
+            <span>{showOfficialProtocol ? 'OCULTAR CRONOGRAMA DE IMPLANTAÇÃO' : 'VER CRONOGRAMA INTEGRAL DE IMPLANTAÇÃO'}</span>
+            {showOfficialProtocol ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </button>
+        </SovereignTooltip>
+
+        <button
+          onClick={() => {
+            if (playAudioClick) playAudioClick();
+            window.print();
+          }}
+          className="flex items-center gap-2.5 px-6 py-3.5 rounded-2xl border border-blue-500/20 bg-blue-500/10 hover:bg-blue-500/20 text-[#60a5fa] hover:text-white font-mono text-xs font-semibold tracking-wider transition-all duration-300 shadow-md cursor-pointer shrink-0"
+        >
+          <FileSignature className="w-4 h-4 text-blue-400" />
+          <span>EXPORTAR PROTOCOLO</span>
         </button>
 
         <a 
@@ -873,6 +1132,199 @@ export default function PilotProposals({ playAudioClick }: PilotProposalsProps) 
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Printable official dossier hidden in browser, but rendered professionally during window.print() */}
+      <div id="sila-print-dossier" className="hidden">
+        <style>
+          {`
+            @media print {
+              body * {
+                visibility: hidden;
+              }
+              #sila-print-dossier, #sila-print-dossier * {
+                visibility: visible;
+              }
+              #sila-print-dossier {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                color: #1a202c !important;
+                background-color: #ffffff !important;
+                font-family: system-ui, -apple-system, sans-serif !important;
+                padding: 40px !important;
+                box-sizing: border-box;
+              }
+              .no-print {
+                display: none !important;
+              }
+              .border-print {
+                border: 1px solid #cbd5e0 !important;
+              }
+              .header-print {
+                border-bottom: 3px double #1a202c !important;
+                padding-bottom: 20px !important;
+                margin-bottom: 30px !important;
+              }
+              .page-break {
+                page-break-before: always;
+              }
+            }
+          `}
+        </style>
+
+        <div className="header-print text-center space-y-2">
+          <div className="text-sm font-bold tracking-wider text-slate-800 uppercase">República de Angola</div>
+          <div className="text-xs font-semibold text-slate-600 uppercase">Governo Provincial do Huambo & Governo Provincial de Luanda</div>
+          <div className="text-xl font-bold text-slate-900 uppercase tracking-tight mt-2">Dossier de Pacto e Implantação de Interoperabilidade Soberana</div>
+          <div className="text-md font-bold text-blue-700 tracking-wider">SILA — Sinfonia de Interoperabilidade e Lançamentos Administrativos</div>
+          <div className="text-[10px] font-mono text-slate-500 block mt-2">Código do Documento: MAT-SILA-HB-LA-2026 • Emissão: 11 de Junho de 2026</div>
+        </div>
+
+        {/* Section 1: Intro */}
+        <div className="space-y-4 mb-8">
+          <h2 className="text-lg font-bold border-b border-slate-300 pb-1 text-slate-900 uppercase">1. Enquadramento e Objetivos do Convênio</h2>
+          <p className="text-xs text-slate-700 leading-relaxed">
+            Este plano operacional estipula os parâmetros técnicos, de governança e de segurança estabelecidos entre o Ministério de tutela no Território (MAT) e o Ministério da Educação (MED) para a provisão da infraestrutura fiduciária digital <strong>SILA</strong>. O objetivo do sistema assenta na completa eliminação do suporte físico para certidões acadêmicas, cadernetas, mapas pautais e relatórios municipais, integrando-os de forma irreversível e imutável no barramento soberano nacional.
+          </p>
+        </div>
+
+        {/* Section 2: Huambo municipal plan */}
+        <div className="space-y-4 mb-8">
+          <h2 className="text-lg font-bold border-b border-slate-300 pb-1 text-slate-900 uppercase">2. Plano Operacional de Cobertura de Huambo (Nó Piloto)</h2>
+          <p className="text-xs text-slate-700 leading-relaxed mb-3">
+            O Huambo atua como a província piloto pioneira de governança sem frestas. Abaixo detalham-se os 11 municípios credenciados de forma individual para o recebimento de chaves criptográficas de sincronização:
+          </p>
+          <table className="w-full text-left text-[11px] border-collapse">
+            <thead>
+              <tr className="bg-slate-100 border-b border-slate-400 font-bold">
+                <th className="p-2 border border-slate-300">Município</th>
+                <th className="p-2 border border-slate-300 text-center">Escolas Cobertas</th>
+                <th className="p-2 border border-slate-300 text-center">Estudantes Assistidos</th>
+                <th className="p-2 border border-slate-300">Tecnologia de Enlace</th>
+                <th className="p-2 border border-slate-300">Risco / Contingência</th>
+              </tr>
+            </thead>
+            <tbody>
+              {HUAMBO_MUNICIPALITIES.map((muni, index) => (
+                <tr key={index} className="border-b border-slate-200">
+                  <td className="p-2 border border-slate-300 font-semibold">{muni.name}</td>
+                  <td className="p-2 border border-slate-300 text-center">{muni.schools}</td>
+                  <td className="p-2 border border-slate-300 text-center">{muni.students.toLocaleString('pt-AO')}</td>
+                  <td className="p-2 border border-slate-300">{muni.connectivity}</td>
+                  <td className="p-2 border border-slate-300">{muni.riskLevel} - {muni.notes}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="page-break" />
+
+        {/* Section 3: Cost-Benefit Comparative Projections */}
+        <div className="space-y-4 mb-8 mt-10">
+          <h2 className="text-lg font-bold border-b border-slate-300 pb-1 text-slate-900 uppercase">3. Análise Multilateral de Eficiência Orçamentária e Economia Operacional</h2>
+          <p className="text-xs text-slate-700 leading-relaxed mb-3">
+            O SILA reprime o desperdício estatal mitigando a dotação para transportes físicos, papéis timbrados e preenchimento manual redundante. Segue o demonstrativo financeiro projetado para o Huambo e a escalabilidade fiduciária programada para a Província Metropolitana de Luanda:
+          </p>
+          
+          <h3 className="text-xs font-bold text-slate-800 uppercase mt-4 mb-2">Demonstrativo Huambo (Impacto Local Inicial)</h3>
+          <table className="w-full text-left text-[11px] border-collapse">
+            <thead>
+              <tr className="bg-slate-100 border-b border-slate-400 font-bold">
+                <th className="p-2 border border-slate-300">Categoria de Despesa</th>
+                <th className="p-2 border border-slate-300 text-right">Processo Tradicional (M AOA)</th>
+                <th className="p-2 border border-slate-300 text-right">SILA Soberano (M AOA)</th>
+                <th className="p-2 border border-slate-300 text-right">Economia Líquida (M AOA)</th>
+                <th className="p-2 border border-slate-300">Setor do Impacto</th>
+              </tr>
+            </thead>
+            <tbody>
+              {SAVINGS_PROJECTIONS_DATA.huambo.items.map((item, index) => (
+                <tr key={index} className="border-b border-slate-200">
+                  <td className="p-2 border border-slate-300">{item.category}</td>
+                  <td className="p-2 border border-slate-300 text-right">{item.traditionalCost} M AOA</td>
+                  <td className="p-2 border border-slate-300 text-right">{item.silaCost} M AOA</td>
+                  <td className="p-2 border border-slate-300 text-right font-semibold text-emerald-700">{(item.traditionalCost - item.silaCost)} M AOA</td>
+                  <td className="p-2 border border-slate-300">{item.sector}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <h3 className="text-xs font-bold text-slate-800 uppercase mt-6 mb-2">Demonstrativo Luanda (Escalabilidade Metropolitana Estimada)</h3>
+          <table className="w-full text-left text-[11px] border-collapse">
+            <thead>
+              <tr className="bg-slate-100 border-b border-slate-400 font-bold">
+                <th className="p-2 border border-slate-300">Categoria de Despesa</th>
+                <th className="p-2 border border-slate-300 text-right">Processo Tradicional (M AOA)</th>
+                <th className="p-2 border border-slate-300 text-right">SILA Soberano (M AOA)</th>
+                <th className="p-2 border border-slate-300 text-right">Economia Líquida (M AOA)</th>
+                <th className="p-2 border border-slate-300">Setor do Impacto</th>
+              </tr>
+            </thead>
+            <tbody>
+              {SAVINGS_PROJECTIONS_DATA.luanda.items.map((item, index) => (
+                <tr key={index} className="border-b border-slate-200">
+                  <td className="p-2 border border-slate-300">{item.category}</td>
+                  <td className="p-2 border border-slate-300 text-right">{item.traditionalCost} M AOA</td>
+                  <td className="p-2 border border-slate-300 text-right">{item.silaCost} M AOA</td>
+                  <td className="p-2 border border-slate-300 text-right font-semibold text-emerald-700">{(item.traditionalCost - item.silaCost)} M AOA</td>
+                  <td className="p-2 border border-slate-300">{item.sector}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Section 4: Cooperation Clauses */}
+        <div className="space-y-4 mb-8">
+          <h2 className="text-lg font-bold border-b border-slate-300 pb-1 text-slate-900 uppercase">4. Cláusulas Normativas e do Acordo de Cooperação</h2>
+          <div className="space-y-3">
+            {MINISTERIAL_CLAUSES.map((clause, idx) => (
+              <div key={idx} className="text-xs">
+                <div className="font-bold text-slate-800">Cláusula {idx + 1}: {clause.target}</div>
+                <p className="text-[11px] text-slate-600 mt-0.5 leading-normal">{clause.description}</p>
+                <span className="text-[9px] font-mono text-slate-500 block italic">Enquadramento Legal: {clause.legalBasis}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Section 5: Signature Blocks */}
+        <div className="space-y-4 mt-12 border-t border-slate-300 pt-8">
+          <h2 className="text-lg font-bold text-slate-900 uppercase text-center mb-6">5. Termos de Homologação e Assinatura Digital Soberana</h2>
+          <div className="grid grid-cols-3 gap-6 text-center text-xs">
+            <div className="space-y-8">
+              <div className="h-10 flex items-end justify-center">
+                <span className="text-[9px] font-mono text-slate-400 font-bold block bg-slate-50 border border-slate-200 p-1.5 rounded">
+                  ASSINADO DIGITALMENTE<br/><span className="text-slate-600">MAT-ID: FF99-0012</span>
+                </span>
+              </div>
+              <div className="border-t border-slate-400 pt-2 font-semibold">Representante MAT</div>
+            </div>
+            <div className="space-y-8">
+              <div className="h-10 flex items-end justify-center">
+                <span className="text-[9px] font-mono text-slate-400 font-bold block bg-slate-50 border border-slate-200 p-1.5 rounded">
+                  ASSINADO DIGITALMENTE<br/><span className="text-slate-600">MED-ID: ACC-109D</span>
+                </span>
+              </div>
+              <div className="border-t border-slate-400 pt-2 font-semibold">Representante MED</div>
+            </div>
+            <div className="space-y-8">
+              <div className="h-10 flex items-end justify-center">
+                <span className="text-[9px] font-mono text-slate-400 font-bold block bg-slate-50 border border-slate-200 p-1.5 rounded">
+                  AUTORIZADO GOV-HB<br/><span className="text-slate-600">CERT-MAT-2026-X89</span>
+                </span>
+              </div>
+              <div className="border-t border-slate-400 pt-2 font-semibold">Governador do Huambo</div>
+            </div>
+          </div>
+          <div className="text-[9px] text-slate-400 text-center mt-6">
+            O presente documento é classificado fiduciário, com integridade certificada pelo nó do barramento seguro do Estado de Angola.
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

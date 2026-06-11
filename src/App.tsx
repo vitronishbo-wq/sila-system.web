@@ -7,7 +7,8 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence, useScroll, useSpring, useTransform, useMotionValue } from 'motion/react';
 import { 
   ChevronDown, ShieldCheck, Mail, Send, Sparkles, Building2, Phone,
-  User, CheckCircle, Smartphone, ExternalLink, Bookmark, Info, HelpCircle
+  User, CheckCircle, Smartphone, ExternalLink, Bookmark, Info, HelpCircle,
+  FileText, Share2, Loader2
 } from 'lucide-react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -27,6 +28,7 @@ import VideoPlayer from './components/VideoPlayer';
 import SilaVisionPlayer from './components/SilaVisionPlayer';
 import PilotProposals from './components/PilotProposals';
 import InteroperabilityArchitecture from './components/InteroperabilityArchitecture';
+import MinisterialIntegrationGuide from './components/MinisterialIntegrationGuide';
 import NetworkBackground from './components/NetworkBackground';
 import ComparativeSplitScreen from './components/ComparativeSplitScreen';
 import StrategicFaq from './components/StrategicFaq';
@@ -37,12 +39,15 @@ import SilaArViewer from './components/SilaArViewer';
 import SovereignSectionMinimap from './components/SovereignSectionMinimap';
 import SovereignKeyTakeaway from './components/SovereignKeyTakeaway';
 import SovereignExecutiveDashboard from './components/SovereignExecutiveDashboard';
+import SovereignSustainabilityReport from './components/SovereignSustainabilityReport';
 import BureaucracySaverWidget from './components/BureaucracySaverWidget';
 import GovernmentEfficiencyCalculator from './components/GovernmentEfficiencyCalculator';
 import DigitalMaturityChart from './components/DigitalMaturityChart';
 import ProblemaContent from './components/ProblemaContent';
 import HuamboDematerializationLineChart from './components/HuamboDematerializationLineChart';
 import PilotProtocolVisualizer from './components/PilotProtocolVisualizer';
+import MATMeetingScheduler from './components/MATMeetingScheduler';
+import { useLanguage } from './context/LanguageContext';
 
 import { PROBLEM_METRICS, FUC_MILESTONES, EDUCATION_CAPABILITIES } from './data/silaData';
 import { FucMilestone, EducationCapability } from './types';
@@ -119,6 +124,7 @@ const CINEMATIC_SECTION_TRANSITION = {
 };
 
 export default function App() {
+  const { language, t } = useLanguage();
   const [activeSection, setActiveSection] = useState('hero');
   const activeIdx = SECTIONS.findIndex((s) => s.id === activeSection);
   const slideProgress = useMotionValue(0);
@@ -187,6 +193,8 @@ export default function App() {
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [formData, setFormData] = useState({ name: '', title: '', govOrgan: '', email: '', phone: '' });
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' } | null>(null);
+  const [showWhatsAppConfirmApp, setShowWhatsAppConfirmApp] = useState(false);
+  const [sendingWhatsAppApp, setSendingWhatsAppApp] = useState(false);
 
   // Connection changes listener & local DB sync
   useEffect(() => {
@@ -506,7 +514,7 @@ export default function App() {
             onClick={() => handleNavigate(sec.id)}
             onMouseEnter={() => playChime('hover')}
             className="group relative flex items-center justify-center"
-            title={sec.title}
+            title={t(sec.title)}
           >
             <div className={`w-3 h-3 rounded-full transition-all duration-300 ${
               activeSection === sec.id 
@@ -515,7 +523,7 @@ export default function App() {
             }`} />
             {/* Hover floating label */}
             <span className="absolute right-6 bg-[#05070A] border border-white/10 text-slate-300 text-[10px] px-2 py-1 rounded-md font-sans tracking-wide opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-300 whitespace-nowrap">
-              {sec.title}
+              {t(sec.title)}
             </span>
           </button>
         ))}
@@ -620,7 +628,7 @@ export default function App() {
                   <div className="inline-flex items-center gap-2 bg-blue-500/10 px-3.5 py-1.5 rounded-full border border-blue-500/20 text-xs text-slate-200">
                     <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                     <span className="font-mono uppercase tracking-widest font-semibold text-amber-400">
-                      Estado Digital Soberano
+                      {t('Estado Digital Soberano')}
                     </span>
                     <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
                   </div>
@@ -630,10 +638,10 @@ export default function App() {
                       SILA
                     </h1>
                     <h2 className="text-2xl sm:text-4xl font-display font-medium text-slate-100 leading-tight">
-                      Sistema Integrado Local de Angola
+                      {t('Sistema Integrado Local de Angola')}
                     </h2>
                     <p className="text-base sm:text-lg text-slate-400 max-w-xl mx-auto lg:mx-0 font-sans leading-relaxed">
-                      Uma plataforma nacional robusta para conectar e interoperar cidadãos, instituições locais e serviços públicos na República de Angola.
+                      {t('Uma plataforma nacional robusta para conectar e interoperar cidadãos, instituições locais e serviços públicos na República de Angola.')}
                     </p>
                   </div>
 
@@ -641,10 +649,10 @@ export default function App() {
                   <div className="bg-gradient-to-b from-white/5 to-transparent p-6 border border-white/10 rounded-2xl max-w-md mx-auto lg:mx-0 text-left relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 blur-xl"></div>
                     <span className="text-[10px] font-mono uppercase tracking-widest text-amber-500 block mb-1">
-                      Princípio Constitucional
+                      {t('Princípio Constitucional')}
                     </span>
                     <p className="text-sm font-sans font-semibold text-slate-200 leading-relaxed italic">
-                      "O cidadão fornece os dados uma única vez."
+                      "{t('O cidadão fornece os dados uma única vez.')}"
                     </p>
                   </div>
 
@@ -655,7 +663,7 @@ export default function App() {
                       onMouseEnter={() => playChime('hover')}
                       className="w-full sm:w-auto px-6 py-3.5 bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-500 hover:to-blue-700 text-white text-sm rounded-xl font-medium shadow-xl shadow-blue-900/20 hover:shadow-blue-900/30 transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer group"
                     >
-                      Explorar o Futuro do Estado
+                      {t('Explorar o Futuro do Estado')}
                       <ChevronDown className="w-4 h-4 group-hover:translate-y-1 transition-transform" />
                     </button>
                     <button
@@ -663,7 +671,7 @@ export default function App() {
                       onMouseEnter={() => playChime('hover')}
                       className="w-full sm:w-auto px-6 py-3.5 bg-white/[0.02] hover:bg-white/[0.05] text-slate-300 hover:text-white border border-white/10 rounded-xl text-sm font-medium transition-all duration-300"
                     >
-                      Solicitar Piloto Operacional
+                      {t('Solicitar Piloto Operacional')}
                     </button>
                   </div>
                 </div>
@@ -930,6 +938,9 @@ export default function App() {
             >
               <ParallaxContent className="max-w-7xl mx-auto">
                 <SovereignExecutiveDashboard playAudioClick={playChime} isOffline={isOffline} />
+                <div className="mt-12">
+                  <SovereignSustainabilityReport playAudioClick={playChime} />
+                </div>
                 <SovereignQuickJump currentSectionId="dashboard" sections={SECTIONS} onNavigate={handleNavigate} playAudioClick={playChime} />
               </ParallaxContent>
             </motion.section>
@@ -960,6 +971,10 @@ export default function App() {
                 </div>
                 
                 <InteroperabilityArchitecture playAudioClick={playChime} onOpenAr={() => setIsArOpen(true)} />
+                <div className="mt-12">
+                  <MinisterialIntegrationGuide playAudioClick={playChime} />
+                </div>
+                <MATMeetingScheduler playAudioClick={playChime} />
                 <SovereignKeyTakeaway sectionId="arquitetura" className="mt-12" />
                 <SovereignQuickJump currentSectionId="arquitetura" sections={SECTIONS} onNavigate={handleNavigate} playAudioClick={playChime} />
               </ParallaxContent>
@@ -1062,8 +1077,34 @@ export default function App() {
 
                 <SovereignKeyTakeaway sectionId="conclusao" className="mt-8 text-left max-w-2xl mx-auto" />
                 
+                {/* Direct Contacts Deck */}
+                <div id="contactos-diretos" className="mt-14 pt-8 border-t border-white/5 w-full grid grid-cols-1 md:grid-cols-2 gap-4 text-left font-sans">
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] font-mono text-[#FFB800] uppercase tracking-widest block font-bold">Canais Directos de Atendimento</span>
+                    <p className="text-xs text-slate-400">Entre em contacto com o nosso corpo especializado por via telemática para esclarecer dúvidas.</p>
+                  </div>
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-start md:justify-end gap-3 font-mono text-[10px]">
+                    <a
+                      href="https://wa.me/244948323383"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-emerald-500/10 bg-emerald-500/5 hover:bg-emerald-500/10 text-emerald-400 hover:text-emerald-300 transition-all cursor-pointer"
+                    >
+                      <Smartphone className="w-4 h-4 shrink-0 text-emerald-500" />
+                      <span>WhatsApp: +244 948 323 383</span>
+                    </a>
+                    <a
+                      href="mailto:inf@vitronis.co.ao"
+                      className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-blue-500/10 bg-blue-500/5 hover:bg-blue-500/10 text-blue-400 hover:text-blue-300 transition-all cursor-pointer"
+                    >
+                      <Mail className="w-4 h-4 shrink-0 text-blue-500" />
+                      <span>E-mail: inf@vitronis.co.ao</span>
+                    </a>
+                  </div>
+                </div>
+
                 {/* Soft government footer credentials representation */}
-                <div className="mt-14 pt-8 border-t border-white/5 w-full flex flex-col md:flex-row items-center justify-between gap-4 text-left font-mono">
+                <div className="mt-8 pt-8 border-t border-white/5 w-full flex flex-col md:flex-row items-center justify-between gap-4 text-left font-mono">
                   <div className="text-[10px] text-slate-600 space-y-1 text-center md:text-left">
                     <p>REPÚBLICA DE ANGOLA • MINISTÉRIO DA ADMINISTRAÇÃO DO TERRITÓRIO (MAT)</p>
                     <p>SILA: SISTEMA INTEGRADO LOCAL DE ANGOLA © 2026 • TODOS OS DIREITOS RESERVADOS</p>
@@ -1171,6 +1212,38 @@ export default function App() {
                 </p>
               </div>
 
+              {/* Direct channels for Quick Contact */}
+              {modalType === 'contacto' && (
+                <div className="mb-6 space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <a
+                      href="https://wa.me/244948323383"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex flex-col items-center justify-center p-3 bg-emerald-500/10 hover:bg-emerald-500/15 border border-emerald-500/20 hover:border-emerald-500/30 rounded-xl text-center transition-all cursor-pointer group"
+                    >
+                      <Smartphone className="w-5 h-5 text-emerald-400 group-hover:scale-110 transition-transform mb-1 shrink-0" />
+                      <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-widest">WhatsApp</span>
+                      <span className="text-[9px] text-slate-300 font-mono mt-0.5 font-medium">+244 948 323 383</span>
+                    </a>
+                    <a
+                      href="mailto:inf@vitronis.co.ao"
+                      className="flex flex-col items-center justify-center p-3 bg-blue-500/10 hover:bg-blue-500/15 border border-blue-500/20 hover:border-blue-500/30 rounded-xl text-center transition-all cursor-pointer group overflow-hidden"
+                    >
+                      <Mail className="w-5 h-5 text-blue-400 group-hover:scale-110 transition-transform mb-1 shrink-0" />
+                      <span className="text-[10px] font-mono font-bold text-blue-400 uppercase tracking-widest">E-mail</span>
+                      <span className="text-[9px] text-slate-300 font-mono mt-0.5 font-medium truncate max-w-full">inf@vitronis.co.ao</span>
+                    </a>
+                  </div>
+                  
+                  <div className="relative flex py-2 items-center">
+                    <span className="flex-grow border-t border-white/5"></span>
+                    <span className="flex-shrink mx-4 text-slate-500 text-[8px] font-mono uppercase tracking-wider">OU REGISTAR REQUISIÇÃO OFICIAL</span>
+                    <span className="flex-grow border-t border-white/5"></span>
+                  </div>
+                </div>
+              )}
+
               {/* Form elements */}
               <form onSubmit={handleFormSubmit} className="space-y-4">
                 <div className="space-y-1">
@@ -1267,26 +1340,165 @@ export default function App() {
                 </div>
 
                 {/* Actions */}
-                <div className="flex gap-3 pt-2">
+                <div className="flex flex-col gap-2.5 pt-2">
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowContactModal(false)}
+                      onMouseEnter={() => playChime && playChime('hover')}
+                      className="flex-1 py-2.5 border border-white/10 hover:border-white/20 hover:bg-white/[0.02] bg-transparent text-slate-400 hover:text-slate-200 text-xs rounded-xl font-medium transition-colors"
+                    >
+                      Retroceder
+                    </button>
+                    <button
+                      type="submit"
+                      onMouseEnter={() => playChime && playChime('hover')}
+                      className="flex-1 py-2.5 bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-500 hover:to-blue-700 text-white text-xs rounded-xl font-medium flex items-center justify-center gap-1.5 shadow-md transition-transform hover:scale-[1.01]"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                      Submeter Requisição
+                    </button>
+                  </div>
                   <button
                     type="button"
-                    onClick={() => setShowContactModal(false)}
-                    onMouseEnter={() => playChime('hover')}
-                    className="flex-1 py-2.5 border border-white/10 hover:border-white/20 hover:bg-white/[0.02] bg-transparent text-slate-400 hover:text-slate-200 text-xs rounded-xl font-medium transition-colors"
+                    onClick={() => {
+                      setShowWhatsAppConfirmApp(true);
+                      if (playChime) playChime('activation');
+                    }}
+                    className="w-full py-2.5 bg-[#121c16] hover:bg-emerald-500/10 border border-emerald-500/20 hover:border-emerald-500/30 text-emerald-400 text-xs rounded-xl font-medium flex items-center justify-center gap-1.5 shadow-md transition-all cursor-pointer"
                   >
-                    Retroceder
-                  </button>
-                  <button
-                    type="submit"
-                    onMouseEnter={() => playChime('hover')}
-                    className="flex-1 py-2.5 bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-500 hover:to-blue-700 text-white text-xs rounded-xl font-medium flex items-center justify-center gap-1.5 shadow-md transition-transform hover:scale-[1.01]"
-                  >
-                    <Send className="w-3.5 h-3.5" />
-                    Submeter Requisição
+                    <Smartphone className="w-3.5 h-3.5 shrink-0" />
+                    Sincronizar com WhatsApp
                   </button>
                 </div>
               </form>
 
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* WHATSAPP CONTACT CONFIRMATION MODAL */}
+      <AnimatePresence>
+        {showWhatsAppConfirmApp && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm no-print">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-[#0c0f16] border border-[#22c55e]/20 rounded-2xl max-w-lg w-full p-6 text-left shadow-[0_0_50px_rgba(34,197,94,0.15)] relative overflow-hidden font-sans"
+            >
+              <div className="absolute top-0 right-0 w-32 h-32 bg-[#22c55e]/[0.02] rounded-full blur-2xl"></div>
+
+              <div className="flex items-center gap-3 border-b border-white/5 pb-4 mb-4">
+                <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400 shrink-0">
+                  <Smartphone className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-mono tracking-widest text-emerald-400 uppercase font-semibold">
+                    Envio de Protocolo via WhatsApp API
+                  </h4>
+                  <p className="text-[10px] text-slate-400">Canal Seguro Certificado MAT • Sincronização SFP</p>
+                </div>
+              </div>
+
+              {/* Simulated PDF Preview Box */}
+              <div className="bg-[#05070a]/75 border border-white/5 rounded-xl p-4 space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-12 h-12 bg-rose-500/10 border border-rose-500/20 rounded-lg flex flex-col items-center justify-center text-rose-500 shrink-0 font-mono text-[9px] font-bold">
+                    <FileText className="w-6 h-6 text-rose-500 mb-0.5" />
+                    PDF
+                  </div>
+                  <div className="space-y-1 overflow-hidden flex-1 select-none">
+                    <span className="text-xs font-sans text-white font-medium block truncate">
+                      SILA-Protocolo-Soberano_Atendimento_2026.pdf
+                    </span>
+                    <span className="text-[9px] font-mono text-slate-500 block">
+                      TAMANHO: 1.28 MB • AUTENTICADO POR ASSINATURA DIGITAL
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-y-3.5 gap-x-4 text-[10px] border-t border-white/5 pt-3.5">
+                  <div>
+                    <span className="text-slate-500 block leading-none mb-1">Destinatário Oficial:</span>
+                    <span className="text-slate-200 font-mono font-semibold">+244 948 323 383 (SILA Central)</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block leading-none mb-1">Objetivos de Interoperabilidade:</span>
+                    <span className="text-slate-200 font-semibold block truncate">MED-MAT Huambo-Luanda</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block leading-none mb-1">Solicitante:</span>
+                    <span className="text-slate-200 font-semibold block truncate">
+                      {formData.name || 'Representante Provincial'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block leading-none mb-1">Órgão / Cargo:</span>
+                    <span className="text-slate-100 font-semibold block truncate">
+                      {formData.govOrgan || 'SILA Local'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 p-3 bg-emerald-500/5 rounded-xl border border-emerald-500/10 text-[10px] text-slate-400 leading-relaxed font-sans">
+                <strong>Procedimento Técnico:</strong> Ao confirmar o envio, o sistema compilará os dados fiduciários em uma mensagem assinada criptograficamente com referência securitária em anexo, direcionando para a API do WhatsApp com o destinatário <strong>+244 948 323 383</strong>.
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  type="button"
+                  disabled={sendingWhatsAppApp}
+                  onClick={() => {
+                    setShowWhatsAppConfirmApp(false);
+                    if (playChime) playChime('click');
+                  }}
+                  className="flex-1 py-2.5 bg-white/[0.03] hover:bg-white/[0.06] text-slate-300 hover:text-white border border-white/10 rounded-lg text-xs font-semibold tracking-wide transition-colors cursor-pointer text-center disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  disabled={sendingWhatsAppApp}
+                  onClick={async () => {
+                    if (playChime) playChime('activation');
+                    setSendingWhatsAppApp(true);
+                    
+                    // Simulate encryption and compilation process nicely
+                    await new Promise((resolve) => setTimeout(resolve, 1200));
+                    
+                    const msgText = `📝 *SILA - PROTOCOLO DE INTEROPERABILIDADE SOBERANA PACTO* \n` +
+                                    `*Documento:* SILA-Protocolo-Soberano_Atendimento_2026.pdf\n` +
+                                    `*Ambiente:* Ministério da Administração do Território (MAT)\n` +
+                                    `*Destinatário:* +244948323383 (SILA Central)\n` +
+                                    `*Solicitante:* ${formData.name || 'Representante Provincial'} (${formData.title || 'SILA Local'})\n` +
+                                    `*Órgão:* ${formData.govOrgan || 'Governo Provincial'}\n` +
+                                    `*Email Privado/Telf:* ${formData.email || 'Não especificado'} / ${formData.phone || 'Não especificado'}\n` +
+                                    `*Hash Criptográfico:* SHA-256 (3b8fa31ca415ee8d9c223c6f499afdb8c028a3915f013d2983792cbdb3a2e7c)\n\n` +
+                                    `Olá! Estou a partilhar e a sincronizar o protocolo técnico oficial do SILA integrado com os meus detalhes de contacto. Favor validar em anexo o PDF do documento.\n\n` +
+                                    `Aceda ao Portal Técnico Ativo: ${window.location.origin}`;
+                    
+                    window.open(`https://wa.me/244948323383?text=${encodeURIComponent(msgText)}`, '_blank');
+                    setSendingWhatsAppApp(false);
+                    setShowWhatsAppConfirmApp(false);
+                  }}
+                  className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold tracking-wide shadow-lg cursor-pointer text-center flex items-center justify-center gap-1.5"
+                >
+                  {sendingWhatsAppApp ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>A Compilar PDF...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Share2 className="w-3.5 h-3.5" />
+                      <span>Confirmar e Enviar</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </motion.div>
           </div>
         )}

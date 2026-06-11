@@ -283,7 +283,48 @@ export default function InteroperabilityArchitecture({ playAudioClick, onOpenAr 
                       className="absolute inset-[1.5px] rounded-full opacity-0 hover:opacity-10 transition-opacity"
                       style={{ backgroundColor: node.color }}
                     ></div>
-                    <NodeIcon className="w-5 h-5 sm:w-5.5 sm:h-5.5" />
+
+                    {/* Active pulse outer rings for synchronization state */}
+                    <AnimatePresence>
+                      {syncPhase === 'flowing' && (
+                        <motion.div
+                          className="absolute inset-0 rounded-full border opacity-40 pointer-events-none"
+                          style={{ borderColor: node.color }}
+                          initial={{ scale: 1, opacity: 0.5 }}
+                          animate={{
+                            scale: [1, 1.45],
+                            opacity: [0.5, 0],
+                          }}
+                          exit={{ opacity: 0 }}
+                          transition={{
+                            duration: 1.6,
+                            repeat: Infinity,
+                            ease: "easeOut",
+                            delay: (node.angle / 360) * 0.5,
+                          }}
+                        />
+                      )}
+                    </AnimatePresence>
+
+                    <motion.div
+                      animate={syncPhase === 'flowing' ? {
+                        scale: [1, 1.15, 1],
+                        color: [
+                          isSelected ? '#60a5fa' : '#64748b',
+                          node.color,
+                          isSelected ? '#60a5fa' : '#64748b'
+                        ]
+                      } : {}}
+                      transition={{
+                        duration: 1.6,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                        delay: (node.angle / 360) * 0.5,
+                      }}
+                      className="relative z-10 flex items-center justify-center w-full h-full"
+                    >
+                      <NodeIcon className="w-5 h-5 sm:w-5.5 sm:h-5.5" />
+                    </motion.div>
                   </div>
                 );
               })}
